@@ -38,7 +38,7 @@ pip install requirements.txt
 ```
 
 ## Running the program
-The programs can be run either with their respective python command or with a small bash script.
+The programs can be run with their respective python command.
 
 ### Data and Folder Organization
 This software works only with 3D NIfTI files and the MRI scans should be skull-stripped, registered to the same template and have the same shape.
@@ -108,10 +108,6 @@ If we want to create a mapping from t1 to t2 we can start the training with
 ```
 python3 train.py --experiment_name test_name --data_folder /path/to/data --main_clusters 4 --sub_clusters 100 --mapping_source t1 --mapping_target t2 --method kmeans
 ```
-or 
-```
-./scripts/brainrun 1000 3 test_name /path/to/data 4 100 t1 t2 kmeans _
-```
 
 The _ indicates that a reference image has not been selected.
 
@@ -120,10 +116,6 @@ The _ indicates that a reference image has not been selected.
 Once the model has been trained, we can retrieve the results for the `test_name` experiment with
 ```
 python3 test.py --experiment_name test_name --data_folder /path/to/data --main_clusters 4 --sub_clusters 100 --mapping_source t1 --mapping_target t2 --method kmeans --postprocess 0 --excel --model_phase train --excel --test_set name/to/test
-```
-or 
-```
-./scripts/brainrun 0010 3 test_name /path/to/data 4 100 t1 t2 kmeans _ 0 train name/to/test
 ```
 making sure that the same clustering algorithm and the same numbers of clusters are being used.
 
@@ -151,10 +143,6 @@ folder in `name/to/test`
 ```
 python3 search.py --experiment_name test_name --data_folder /path/to/data --main_clusters 4 --sub_clusters 100 --mapping_source t1 --mapping_target t2 --method kmeans --postprocess 0 --query_filename query_name --n_images 5 --excel --test_set name/to/test
 ```
-or 
-```
-./scripts/brainrun 0010 3 test_name /path/to/data 4 100 t1 t2 kmeans _ 0 train folder/to/test
-```
 `--n_images` selects how many images with the closest MSE will be selected.
 
 ### Complementary
@@ -162,8 +150,4 @@ or
 Moreover, we also implemented a method that computes the complementary of the source image, which is particularly effective for the translation from t1 to t2.
 ```
 python3 complementary.py --experiment_name test_name --data_folder /path/to/data --mapping_source t1 --mapping_target t2 --postprocess 0 --excel --test_set test
-```
-or 
-```
-./scripts/brainrun 0001 3 test_name ../braindata_all/ _ _ t1 t2 _ _ 0 test
 ```
