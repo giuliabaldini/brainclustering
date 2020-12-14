@@ -4,6 +4,7 @@ from matplotlib import cm
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import nibabel as nib
+import copy
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 different_colors = ["#FF0000", "#008000", "#0000FF", "#FFD700",  # Red, green, blue, gold
@@ -180,7 +181,7 @@ class PlotHandler:
 
 def plot_image(image,
                filename,
-               colormap=cm.get_cmap('viridis'),
+               colormap=copy.copy(cm.get_cmap('viridis')),
                mris_shape=None,
                shaded_labels=None,
                one_int_bounds=False,
