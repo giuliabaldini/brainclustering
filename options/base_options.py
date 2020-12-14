@@ -31,9 +31,9 @@ class BaseOptions():
                             help='The slice to be considered for 2D mapping (only when sliced is true)')
 
         # Parameters for clustering
-        parser.add_argument('--method', type=str, default="nesting", const='nesting', nargs='?',
-                            choices=['kmeans', 'nesting', 'agglomerative'],
-                            help='the clustering method to use, the options are kmeans, nesting or agglomerative')
+        parser.add_argument('--method', type=str, default="kmeans", const='kmeans', nargs='?',
+                            choices=['kmeans', 'nesting'],
+                            help='the clustering method to use, the options are kmeans or nesting')
         parser.add_argument('--main_clusters', type=int, default=3,
                             help='The number of main clusters, we advice to use a number between 3 and 7')
         parser.add_argument('--sub_clusters', type=int, default=201,
@@ -52,8 +52,6 @@ class BaseOptions():
                                  '1 means normalize with unit variance and mean 0 and then scale in range [0, 1].')
 
         # Parameters for plotting/excel
-        # TODO: Check if commenting out creates problems
-        # parser.add_argument('--no_plots', action='store_true', help='choose to plot')
         parser.add_argument('--plot_only_results', action='store_true',
                             help='if plots is true, then plot only the relevant results')
         return parser
@@ -100,7 +98,6 @@ class BaseOptions():
                 self.segmented = False
 
         if args.method == "kmeans" and args.sub_clusters % args.main_clusters != 0:
-            # TODO: This doesn't necessarily have to be like this
             error("KMEANS: The smaller clusters cannot be equally divided over the main clusters. "
                   "Please change the number of smaller clusters to a value divisible by the number of main cluster.")
 

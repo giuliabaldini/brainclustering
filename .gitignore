@@ -41,3 +41,6 @@ build/
 # CLION
 .idea/
 cmake-build-debug/
+
+# Output folder
+output_data/

@@ -119,9 +119,10 @@ class DataLoader:
         # Find the target image
         target = self.load_and_check(filepath, self.mapping_target)
         if target is not None:
-            target = normalize_with_opt(target, self.preprocess)
+            target = normalize_with_opt(target, self.preprocess, 0.01)
             if self.preprocess == 1:
                 target = normalize_with_opt(target, 0)
+
             imgs['target'] = target
 
         # If we are in search or train, we need both target and source

@@ -1,5 +1,3 @@
-import agglomerative
-import fastcluster as fc
 import kmeans1d
 import leveled_kmeans
 import mapping
@@ -45,21 +43,13 @@ class Mapping:
                 if self.method == "nesting":
                     d1 = nesting.cluster1d(m1, k_list_aggl, 0)
                     d2 = nesting.cluster1d(m2, k_list_aggl, 0)
-                elif self.method == "kmeans":
+                else:
                     k_list_div = [self.main_clusters, sub_clusters_d]
                     d_d1 = leveled_kmeans.cluster1d(m1, k_list_div)
                     d_d2 = leveled_kmeans.cluster1d(m2, k_list_div)
                     print_timestamped("Computed kmeans dendograms for the two MRIs.")
                     d1 = leveled_kmeans.build_agglomerative_dendogram(d_d1, k_list_div)
                     d2 = leveled_kmeans.build_agglomerative_dendogram(d_d2, k_list_div)
-                else:
-                    m1_r = m1.reshape(m1.shape[0], 1)
-                    m2_r = m2.reshape(m2.shape[0], 1)
-                    z1 = fc.linkage_vector(m1_r, method="ward")
-                    z2 = fc.linkage_vector(m2_r, method="ward")
-                    print_timestamped("Computed agglomerative dendograms for the two MRIs.")
-                    d1 = agglomerative.build_agglomerative_dendogram(z1, k_list_aggl, 1)
-                    d2 = agglomerative.build_agglomerative_dendogram(z2, k_list_aggl, 1)
 
                 print_timestamped("Computed nesting dendograms for the two MRIs.")
                 # We find the mapping, but we only need to find it for d1, because then d2 will be mapped to d1
@@ -72,11 +62,11 @@ class Mapping:
                 info("Model saved in " + str(curr_filename) + ".")
                 if self.plot_handler.labels_folder is not None:
                     labels = np.zeros(m1.shape[0])
-                    agglomerative.build_labels(labels, d1, k_list_aggl, 1, 1.0)
+                    nesting.build_labels(labels, d1, k_list_aggl, 1, 1.0)
                     new_labels_m1 = add_background(labels, current_mris['source'].shape[0], common_nonzero_train)
 
                     labels = np.zeros(m2.shape[0])
-                    agglomerative.build_labels(labels, d2, k_list_aggl, 1, 1.0)
+                    nesting.build_labels(labels, d2, k_list_aggl, 1, 1.0)
                     new_labels_m2 = add_background(labels, current_mris['target'].shape[0], common_nonzero_train)
                     self.plot_handler.plot_shaded_labels(print_friendly_filename, new_labels_m1, new_labels_m2,
                                                          self.method, self.main_clusters, self.data_loader.mri_shape,
@@ -93,14 +83,10 @@ class Mapping:
         common_nonzero_query = common_nonzero([reference_mri, mri_dict['source']])
         query, query_nonzero = remove_background(mri_dict['source'], nonzero_indices=common_nonzero_query)
         mri_lab_query, _ = remove_background(reference_mri, nonzero_indices=common_nonzero_query)
-        if self.method == "nesting" or self.method == "kmeans":
-            labels_m1, _ = kmeans1d.cluster(query, self.main_clusters)
-            labels_m1 = np.array(labels_m1, dtype=np.float_)
-        else:
-            m1_r = query.reshape(query.shape[0], 1)
-            z1 = fc.linkage_vector(m1_r, method="ward")
-            labels_m1 = fcluster(z1, t=self.main_clusters, criterion='maxclust')
-            labels_m1 = np.array([(l - 1) for l in labels_m1], dtype=np.float_)
+
+        labels_m1, _ = kmeans1d.cluster(query, self.main_clusters)
+        labels_m1 = np.array(labels_m1, dtype=np.float_)
+
         # print(np.unique(labels_m1, return_counts=True))
         # print(np.unique(mri_lab_query, return_counts=True))
         print_timestamped("Computed labels for query.")
