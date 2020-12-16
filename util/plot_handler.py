@@ -76,10 +76,10 @@ class PlotHandler:
         if not self.plot_only_results:
             for label, image in visuals.items():
                 filename = self.train_folder / (patient_name + "_" + self.plot_names_dict[label] + self.image_extension)
-                if self.plot_names_dict[label] == "t2":
-                    continue
                 if self.sliced:
-                    plot_image(image,
+                    reshaped = image.reshape(mris_shape)
+                    cropped = crop_center(reshaped, self.target_shape)
+                    plot_image(cropped,
                                filename,
                                colormap=cm.get_cmap('gray'),
                                mris_shape=mris_shape,
@@ -105,7 +105,9 @@ class PlotHandler:
                 folder.mkdir(parents=True, exist_ok=True)
                 filename = folder / (patient_name + "_" + self.plot_names_dict[label] + self.image_extension)
                 if self.sliced:
-                    plot_image(image,
+                    reshaped = image.reshape(mris_shape)
+                    cropped = crop_center(reshaped, self.target_shape)
+                    plot_image(cropped,
                                filename,
                                colormap=cm.get_cmap('gray'),
                                mris_shape=mris_shape,

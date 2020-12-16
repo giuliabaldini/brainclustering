@@ -249,16 +249,25 @@ def mse_computation(seq, learned_seq):
     return np.mean(np.square(seq[common] - learned_seq[common]))
 
 
-def remove_outliers(arr):
+def remove_outliers(arr, scan_type):
+    # Standardize
     arr = normalize_with_opt(arr, 1)
+    # Don't consider the background
     partial = arr[arr > arr.min()]
+    # Compute the percentiles
     q25, q75 = np.percentile(partial, 25), np.percentile(partial, 75)
     iqr = q75 - q25
-    # calculate the outlier cutoff
+    # Outlier cutoff
     cut_off = iqr * 1.5
     lower, upper = q25 - cut_off, q75 + cut_off
     # print(lower, upper)
-    arr[arr > upper] = 0
+    # Remove outliers above
+    # TODO: Is this correct? Definitely for t1 and t2
+    if "t1" in scan_type:
+        arr[arr > upper] = arr.min()
+    else:
+        arr[arr < lower] = arr.min()
+    # Normalize 0, 1
     arr = normalize_with_opt(arr, 0)
 
     return arr

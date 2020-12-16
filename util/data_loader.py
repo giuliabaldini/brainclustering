@@ -109,7 +109,7 @@ class DataLoader:
         # Find the source image
         source = self.load_and_check(filepath, self.mapping_source)
         if source is not None:
-            source = remove_outliers(source)
+            source = remove_outliers(source, self.mapping_source)
             imgs['source'] = source
         else:
             error("The folder " + str(filepath) + " does not contain any source image.")
@@ -117,7 +117,7 @@ class DataLoader:
         # Find the target image
         target = self.load_and_check(filepath, self.mapping_target)
         if target is not None:
-            target = remove_outliers(target)
+            target = remove_outliers(target, self.mapping_target)
             imgs['target'] = target
 
         # If we are in search or train, we need both target and source
