@@ -45,11 +45,6 @@ class BaseOptions():
         parser.add_argument('--mapping_target', type=str, default="t2", const="t2", nargs='?',
                             choices=['t1', 't2', 't1ce', 'flair'],
                             help='the target sequencing for the mapping')
-        parser.add_argument('--preprocess', type=int, default=0, const=0, nargs='?',
-                            choices=[-1, 0, 1],
-                            help='the kind of pre-processing to apply to the images. -1 means no pre-processing, '
-                                 '0 means scale in range [0, 1], '
-                                 '1 means normalize with unit variance and mean 0 and then scale in range [0, 1].')
 
         # Parameters for plotting/excel
         parser.add_argument('--plot_only_results', action='store_true',
