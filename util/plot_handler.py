@@ -125,10 +125,10 @@ class PlotHandler:
                                affine=affine)
 
     def plot_shaded_labels(self, patient_name, labels1, labels2, method, main_clusters, mris_shape, affine):
-        folder = (self.labels_folder / patient_name)
-        folder.mkdir(parents=True, exist_ok=True)
-        m1_filename = folder / (patient_name + "_" + self.mapping_source + "_labels_" + method + self.image_extension)
-        m2_filename = folder / (patient_name + "_" + self.mapping_target + "_labels_" + method + self.image_extension)
+        m1_filename = self.labels_folder / (
+                    patient_name + "_" + self.mapping_source + "_labels_" + method + self.image_extension)
+        m2_filename = self.labels_folder / (
+                    patient_name + "_" + self.mapping_target + "_labels_" + method + self.image_extension)
         if self.sliced:
             reshaped1 = labels1.reshape(mris_shape)
             cropped1 = crop_center(reshaped1, self.target_shape)
