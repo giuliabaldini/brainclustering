@@ -33,7 +33,7 @@ namespace brainclustering {
         size_t n_cluster_main_;
         size_t n_cluster_secondary_;
         double background_value_;
-        std::vector<std::map<value_type, duipair>> vec_map_;
+        std::vector <std::map<value_type, duipair>> vec_map_;
 
         template<class Archive>
         void serialize(Archive &ar, const unsigned int /* file_version */) {
@@ -48,16 +48,13 @@ namespace brainclustering {
             vec_map_.resize(n_cluster_main_);
         };
 
-        void add_entry(ndarray const &data_vector_seq1, std::vector<std::vector<size_t>> const &dendogram_seq1,
-                       ndarray const &data_vector_seq2, std::vector<std::vector<size_t>> const &dendogram_seq2,
-                       ndarray const &labels_labeled) {
+        void add_entry(ndarray const &data_vector_seq1, std::vector <std::vector<size_t>> const &dendogram_seq1,
+                       ndarray const &data_vector_seq2, std::vector <std::vector<size_t>> const &dendogram_seq2) {
 
             // Data from the first sequencing
             auto *data_seq1 = get_c_array<value_type>(data_vector_seq1);
             // Data from the second sequencing
             auto *data_seq2 = get_c_array<value_type>(data_vector_seq2);
-            // Data from the reference image
-            auto *labeled = get_c_array<value_type>(labels_labeled);
 
             // Sanity check
             if (data_vector_seq1.shape(0) != data_vector_seq2.shape(0)) {
@@ -75,13 +72,12 @@ namespace brainclustering {
 
             size_t n_points = data_vector_seq1.shape(0);
 
-            std::vector<std::vector<size_t>> cluster_indices_seq1(n_cluster_main_);
-            std::vector<std::vector<size_t>> cluster_indices_seq2(n_cluster_main_);
-            std::vector<size_t> cluster_val_small_seq1(n_points);
-            std::vector<size_t> cluster_val_small_seq2(n_points);
-            std::vector<std::vector<int>> cost_matrix(n_cluster_main_, std::vector<int>(n_cluster_main_, 0));
-            std::vector<std::vector<int>> cost_matrix_lab(n_cluster_main_, std::vector<int>(n_cluster_main_, 0));
-            std::vector<std::pair<int, int>> cost_pairs(n_points);
+            std::vector <std::vector<size_t>> cluster_indices_seq1(n_cluster_main_);
+            std::vector <std::vector<size_t>> cluster_indices_seq2(n_cluster_main_);
+            std::vector <size_t> cluster_val_small_seq1(n_points);
+            std::vector <size_t> cluster_val_small_seq2(n_points);
+            std::vector <std::vector<int>> cost_matrix(n_cluster_main_, std::vector<int>(n_cluster_main_, 0));
+            std::vector <std::pair<int, int>> cost_pairs(n_points);
 
             // TODO: This won't work for more than 2 levels, but do we really need more than 2 levels?
             // Go through the main clusters, which always start at index n_cluster_secondary_
@@ -106,11 +102,6 @@ namespace brainclustering {
                         cluster_indices_seq1[i - n_cluster_secondary_].push_back(current_index);
                         // We also save the index of the position in which the smaller cluster is (0 - n_cluster_secondary)
                         cluster_val_small_seq1[current_index] = j - 1;
-                        // Assuming that the background is always the lowest value
-                        if (labeled[current_index] > background_value_) {
-                            // Build contingengy matrix for labels and first sequencing image
-                            cost_matrix_lab[i - n_cluster_secondary_][labeled[current_index] - 1]++;
-                        }
                     }
                 }
 
@@ -131,12 +122,6 @@ namespace brainclustering {
             }
 
             // Run Hungarian algorithm
-            auto mapping_tuples_lab = Hungarian::Solve(cost_matrix_lab);
-            if (mapping_tuples_lab.size() != n_cluster_main_) {
-                std::cerr << "The length of the tuples is not correct." << std::endl;
-                std::abort();
-            }
-            // Run Hungarian algorithm
             auto mapping_tuples = Hungarian::Solve(cost_matrix);
             if (mapping_tuples.size() != n_cluster_main_) {
                 std::cerr << "The length of the tuples is not correct." << std::endl;
@@ -144,15 +129,14 @@ namespace brainclustering {
             }
 
             for (size_t t = 0; t < mapping_tuples.size(); ++t) {
-                size_t mapped_cluster = mapping_tuples_lab[t];
                 size_t cluster_seq1 = t;
                 size_t cluster_seq2 = mapping_tuples[t];
                 //std::cout << "The tuple is (" << cluster_seq1 << ", " << cluster_seq2 << ")" << std::endl;
                 size_t size_cluster = std::max(dendogram_seq1[n_cluster_secondary_ + cluster_seq1].size(),
                                                dendogram_seq2[n_cluster_secondary_ + cluster_seq2].size()) - 1;
 
-                std::vector<std::vector<int>> smaller_cost_matrix(size_cluster,
-                                                                  std::vector<int>(size_cluster, 0));
+                std::vector <std::vector<int>> smaller_cost_matrix(size_cluster,
+                                                                   std::vector<int>(size_cluster, 0));
 
                 std::sort(cluster_indices_seq1[cluster_seq1].begin(),
                           cluster_indices_seq1[cluster_seq1].end());
@@ -234,9 +218,9 @@ namespace brainclustering {
                     // If n_y is zero and would produce a /0, then set it to zero (it will not be considered)
                     y = (n_y > 0) ? y / (n_y * 1.0) : 0.0;
 
-                    auto found = vec_map_[mapped_cluster].find(x);
-                    if (found == vec_map_[mapped_cluster].end()) {
-                        vec_map_[mapped_cluster].insert({x, duipair(y, 1)});
+                    auto found = vec_map_[t].find(x);
+                    if (found == vec_map_[t].end()) {
+                        vec_map_[t].insert({x, duipair(y, 1)});
                     } else {
                         found->second.second++;
                         found->second.first += std::abs(y - found->second.first) / found->second.second;
@@ -254,15 +238,14 @@ namespace brainclustering {
         }
 
         void return_sequencing(ndarray const &data_vector_seq1, ndarray const &labels_vector_seq1,
-                               ndarray const &labels_labeled, ndarray const &new_data_vector_seq2) {
+                               ndarray const &new_data_vector_seq2) {
             // Data of source sequencing
             auto *data_seq1 = get_c_array<value_type>(data_vector_seq1);
             // Labels of source sequencing
             auto *labels_seq1 = get_c_array<value_type>(labels_vector_seq1);
             // Empty array for new sequencing
             auto *new_data_seq2 = get_c_array<value_type>(new_data_vector_seq2);
-            // Reference image
-            auto *labeled = get_c_array<value_type>(labels_labeled);
+
 
             /*for (size_t cluster = 0; cluster < n_cluster_main_; ++cluster) {
                 std::cout << "Looking up the " << cluster << "th map" << std::endl;
@@ -271,38 +254,14 @@ namespace brainclustering {
                               p.second.second << " times." << std::endl;
                 }
             }*/
-            std::vector<std::vector<int>> cost_matrix(n_cluster_main_, std::vector<int>(n_cluster_main_, 0));
-
-            if (labels_labeled.shape(0) != labels_vector_seq1.shape(0)) {
-                std::cerr << "The query labels and the labeled labels should have the same number of elements. ";
-                std::cerr << "Please convert them such that they do. " << std::endl;
-                std::abort();
-            }
-
-            size_t n_points = labels_labeled.shape(0);
-
-            // Mapping between source image and reference image
-            for (size_t i = 0; i < n_points; ++i) {
-                // Assuming that the background is always the lowest value
-                if (labeled[i] > background_value_ && data_seq1[i] > background_value_) {
-                    // Build contingency matrix
-                    cost_matrix[labels_seq1[i]][labeled[i] - 1]++;
-                }
-            }
-            // Compute Hungarian algorithm
-            auto mapping_tuples = Hungarian::Solve(cost_matrix);
-            // Sanity check
-            if (mapping_tuples.size() != n_cluster_main_) {
-                std::cerr << "The length of the tuples is not correct." << std::endl;
-                std::abort();
-            }
+            std::vector <std::vector<int>> cost_matrix(n_cluster_main_, std::vector<int>(n_cluster_main_, 0));
 
             for (int i = 0; i < labels_vector_seq1.shape(0); ++i) {
                 // Skip background points
                 if (data_seq1[i] == background_value_) {
                     continue;
                 }
-                size_t mapped_cluster = mapping_tuples[labels_seq1[i]];
+                size_t mapped_cluster = labels_seq1[i];
 
                 // Try to find the point
                 auto found = vec_map_[mapped_cluster].find(data_seq1[i]);
@@ -358,13 +317,13 @@ namespace brainclustering {
 
 
     BOOST_PYTHON_MODULE (mapping) {
-        numpy::initialize();
+            numpy::initialize();
 
-        python::class_<Table, boost::noncopyable>("Table", python::init<size_t, size_t, double>())
-                .def("add_entry", &Table::add_entry)
-                .def("return_sequencing", &Table::return_sequencing);
-        python::def("save_mapping", save_mapping);
-        python::def("restore_mapping", restore_mapping);
+            python::class_<Table, boost::noncopyable>("Table", python::init<size_t, size_t, double>())
+            .def("add_entry", &Table::add_entry)
+            .def("return_sequencing", &Table::return_sequencing);
+            python::def("save_mapping", save_mapping);
+            python::def("restore_mapping", restore_mapping);
 
     }
 }

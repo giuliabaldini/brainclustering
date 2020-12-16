@@ -15,7 +15,4 @@ class SearchOptions(BaseOptions):
         parser.add_argument('--n_images', type=int, default=5,
                             help='the number of images with closest MSE')
 
-        parser = self.add_common_train_search(parser)
-        parser = self.add_common_test_search(parser)
-
-        return parser
+        return self.add_common_test_search(parser)

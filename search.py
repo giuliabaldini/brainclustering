@@ -54,14 +54,11 @@ if __name__ == "__main__":
         data_loader.all_files_size) + " selected training images.")
 
     # Collect either the segmented image, or a clustering of the first training image
-    reference_mri = data_loader.return_segmented_image(data_loader.all_files[0])
-    plot_handler.plot_reference(reference_mri, save_model_folder, data_loader.mri_shape, data_loader.affine,
-                                opts.method, main_clusters, sub_clusters)
     print_timestamped("Retrieved data for labeled image.")
     map = Mapping(data_loader, plot_handler, save_model_folder, main_clusters, sub_clusters, opts.method)
 
     # Train
-    map.cluster_mapping(reference_mri)
+    map.cluster_mapping()
 
     # Check if we have a truth file to compute the MSE
     truth_nonzero = None
@@ -80,7 +77,7 @@ if __name__ == "__main__":
 
     print_timestamped("Processing query " + query_friendly_filename + ".")
 
-    mris = map.return_results_query(query_mris, reference_mri, opts.smoothing)
+    mris = map.return_results_query(query_mris, opts.smoothing)
     if 'target' in mris:
         excel.evaluate(mris, query_friendly_filename, truth_nonzero, opts.smoothing)
 

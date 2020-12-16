@@ -43,7 +43,6 @@ if __name__ == "__main__":
     print("Testing will use model: " + str(model))
 
     # Collect the segmented image
-    reference_mri = data_loader.return_model_segmented_image(model_folder, opts.method, main_clusters, sub_clusters)
     map = Mapping(data_loader, plot_handler, model_folder, main_clusters, sub_clusters, opts.method)
     map.restore_table(model)
 
@@ -70,7 +69,7 @@ if __name__ == "__main__":
         info(
             "Computing mapping " + mapping_source + " to " + mapping_target + " for query " + query_friendly_filename + ".")
 
-        mris = map.return_results_query(mris, reference_mri, opts.smoothing)
+        mris = map.return_results_query(mris, opts.smoothing)
         if 'target' in mris:
             excel.evaluate(mris, query_friendly_filename, truth_nonzero, opts.smoothing)
 

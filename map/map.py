@@ -17,7 +17,7 @@ class Mapping:
         self.method = method
         self.table = None
 
-    def cluster_mapping(self, reference_mri):
+    def cluster_mapping(self):
         self.table = mapping.Table(self.main_clusters, self.sub_clusters, 0.0)
         sub_clusters_d = int(self.sub_clusters / self.main_clusters)
 
@@ -33,8 +33,7 @@ class Mapping:
                                              self.data_loader.mri_shape,
                                              self.data_loader.affine)
                 print_timestamped("Transformed data.")
-                common_nonzero_train = common_nonzero([reference_mri, current_mris['source'], current_mris['target']])
-                mri_lab_train, _ = remove_background(reference_mri, nonzero_indices=common_nonzero_train)
+                common_nonzero_train = common_nonzero([current_mris['source'], current_mris['target']])
                 m1, _ = remove_background(current_mris['source'], nonzero_indices=common_nonzero_train)
                 m2, _ = remove_background(current_mris['target'], nonzero_indices=common_nonzero_train)
                 print_timestamped("Removed background.")
@@ -52,7 +51,7 @@ class Mapping:
 
                 print_timestamped("Computed dendograms for the two MRIs.")
                 # We find the mapping, but we only need to find it for d1, because then d2 will be mapped to d1
-                self.table.add_entry(m1, d1, m2, d2, mri_lab_train)
+                self.table.add_entry(m1, d1, m2, d2)
                 print_timestamped("Entry added to the tables.")
                 curr_filename = self.model_folder / (
                         "model_" + self.method + "_main" + str(self.main_clusters) + "_sub" + str(
@@ -77,11 +76,9 @@ class Mapping:
         self.table = mapping.Table(10, 2, 0.0)
         mapping.restore_mapping(self.table, str(model))
 
-    def return_results_query(self, mri_dict, reference_mri, smoothing):
+    def return_results_query(self, mri_dict, smoothing):
         # Find all the common indices between the query image and the labeled image
-        common_nonzero_query = common_nonzero([reference_mri, mri_dict['source']])
-        query, query_nonzero = remove_background(mri_dict['source'], nonzero_indices=common_nonzero_query)
-        mri_lab_query, _ = remove_background(reference_mri, nonzero_indices=common_nonzero_query)
+        query, query_nonzero = remove_background(mri_dict['source'])
 
         labels_m1, _ = kmeans1d.cluster(query, self.main_clusters)
         labels_m1 = np.array(labels_m1, dtype=np.float_)
@@ -91,7 +88,7 @@ class Mapping:
         print_timestamped("Computed labels for query.")
 
         new_m2 = np.zeros(query.shape[0])
-        self.table.return_sequencing(query, labels_m1, mri_lab_query, new_m2)
+        self.table.return_sequencing(query, labels_m1, new_m2)
         mri_dict['learned_target'] = add_background(new_m2, mri_dict['source'].shape[0], query_nonzero)
         mri_dict['learned_target_smoothed'] = filter_blur(mri_dict['learned_target'], self.data_loader.mri_shape,
                                                           smoothing)

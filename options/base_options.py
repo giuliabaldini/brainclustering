@@ -1,8 +1,9 @@
 import argparse
 import os
-from util.util import warning, error, info
-from util.util import error
 from pathlib import Path
+
+from util.util import error
+from util.util import warning
 
 
 # Credits: https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix
@@ -49,13 +50,6 @@ class BaseOptions():
         # Parameters for plotting/excel
         parser.add_argument('--plot_only_results', action='store_true',
                             help='if plots is true, then plot only the relevant results')
-        return parser
-
-    def add_common_train_search(self, parser):
-        # Labeled image
-        parser.add_argument('--labeled_filename', type=str, default=None,
-                            help='the file used for reference mapping, '
-                                 'if none the first image of the training set will be used')
         return parser
 
     def add_common_test_search(self, parser):
