@@ -1,7 +1,8 @@
-from util.util import info, transform_single, warning, error, normalize_with_opt, remove_background
 import kmeans1d
 import nibabel as nib
 import numpy as np
+
+from util.util import info, transform_single, warning, error, remove_background, remove_outliers
 
 
 class DataLoader:
@@ -18,7 +19,6 @@ class DataLoader:
         self.affine = None
         self.mri_shape = None
         self.labeled_image = None
-        self.preprocess = args.preprocess
         if options.segmented and self.main_clusters < 4:
             self.labeled_image = args.labeled_filename
 
@@ -109,9 +109,7 @@ class DataLoader:
         # Find the source image
         source = self.load_and_check(filepath, self.mapping_source)
         if source is not None:
-            source = normalize_with_opt(source, self.preprocess, 0.01)
-            if self.preprocess == 1:
-                source = normalize_with_opt(source, 0)
+            source = remove_outliers(source)
             imgs['source'] = source
         else:
             error("The folder " + str(filepath) + " does not contain any source image.")
@@ -119,10 +117,7 @@ class DataLoader:
         # Find the target image
         target = self.load_and_check(filepath, self.mapping_target)
         if target is not None:
-            target = normalize_with_opt(target, self.preprocess, 0.01)
-            if self.preprocess == 1:
-                target = normalize_with_opt(target, 0)
-
+            target = remove_outliers(target)
             imgs['target'] = target
 
         # If we are in search or train, we need both target and source

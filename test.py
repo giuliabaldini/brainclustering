@@ -76,7 +76,7 @@ if __name__ == "__main__":
 
         for label in mris.keys():
             if 'truth' not in label:
-                mris[label] = normalize_with_opt(mris[label], opts.postprocess, 0.0)
+                mris[label] = normalize_with_opt(mris[label], opts.postprocess)
 
         plot_handler.plot_results(mris, query_friendly_filename, opts.smoothing, data_loader.mri_shape,
                                   data_loader.affine)

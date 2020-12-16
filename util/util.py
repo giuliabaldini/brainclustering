@@ -1,13 +1,15 @@
 import datetime
 import time
-import numpy as np
+
 import cv2 as cv
+import numpy as np
 from munkres import Munkres
-from sklearn.metrics.cluster import contingency_matrix, adjusted_rand_score, homogeneity_completeness_v_measure, \
-    fowlkes_mallows_score
 from scipy.special import comb
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, adjusted_mutual_info_score, \
     mutual_info_score, normalized_mutual_info_score
+from sklearn.metrics.cluster import contingency_matrix, adjusted_rand_score, homogeneity_completeness_v_measure, \
+    fowlkes_mallows_score
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 
 def _comb2(n):
@@ -247,35 +249,31 @@ def mse_computation(seq, learned_seq):
     return np.mean(np.square(seq[common] - learned_seq[common]))
 
 
-def normalize_zero_one(arr):
-    min_val = np.min(arr)
-    max_val = np.max(arr)
-    return (arr - min_val) / (max_val - min_val)
+def remove_outliers(arr):
+    arr = normalize_with_opt(arr, 1)
+    partial = arr[arr > arr.min()]
+    q25, q75 = np.percentile(partial, 25), np.percentile(partial, 75)
+    iqr = q75 - q25
+    # calculate the outlier cutoff
+    cut_off = iqr * 1.5
+    lower, upper = q25 - cut_off, q75 + cut_off
+    # print(lower, upper)
+    arr[arr > upper] = 0
+    arr = normalize_with_opt(arr, 0)
+
+    return arr
 
 
-def standardize(arr, threshold=None):
-    if threshold is None:
-        mean = np.mean(arr)
-        std = np.std(arr)
-    else:
-        above = arr[np.where(arr > threshold)]
-        mean = np.mean(above)
-        std = np.std(above)
-    return (arr - mean) / std
-
-
-def scale_normalize(arr, std, mean):
-    arr = normalize_zero_one(arr)
-    return (arr - mean) / std
-
-
-def normalize_with_opt(arr, opt, threshold=None):
+def normalize_with_opt(arr, opt):
+    # print("[", arr.min(), arr.max(), "]", end=" - ")
     if opt == 0:
-        arr = normalize_zero_one(arr)
+        MinMaxScaler(copy=False).fit_transform(arr.reshape(-1, 1))
+        arr = arr.reshape(arr.shape[0])
     elif opt == 1:
-        arr = standardize(arr, threshold)
-    elif opt == 2:
-        arr = scale_normalize(arr, 0.5, 0.5)
+        trans = StandardScaler(copy=False).fit(arr[arr > 0].reshape(-1, 1))
+        trans.transform(arr.reshape(-1, 1))
+        arr = arr.reshape(arr.shape[0])
+    # print("[", arr.min(), arr.max(), "]")
     return arr
 
 

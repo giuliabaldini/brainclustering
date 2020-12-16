@@ -1,11 +1,12 @@
-from util.util import info, crop_center, error, print_timestamped, normalize_with_opt
-import numpy as np
-from matplotlib import cm
+import copy
+
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import nibabel as nib
-import copy
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+import numpy as np
+from matplotlib import cm
+
+from util.util import info, crop_center, error, print_timestamped
 
 different_colors = ["#FF0000", "#008000", "#0000FF", "#FFD700",  # Red, green, blue, gold
                     "#00BFFF", "#DDA0DD", "#808080", "#800000",  # Light blue, magenta, gray, maroon
@@ -75,9 +76,12 @@ class PlotHandler:
         if not self.plot_only_results:
             for label, image in visuals.items():
                 filename = self.train_folder / (patient_name + "_" + self.plot_names_dict[label] + self.image_extension)
+                if self.plot_names_dict[label] == "t2":
+                    continue
                 if self.sliced:
                     plot_image(image,
                                filename,
+                               colormap=cm.get_cmap('gray'),
                                mris_shape=mris_shape,
                                plotbar=False)
                 else:
@@ -124,16 +128,22 @@ class PlotHandler:
         m1_filename = folder / (patient_name + "_" + self.mapping_source + "_labels_" + method + self.image_extension)
         m2_filename = folder / (patient_name + "_" + self.mapping_target + "_labels_" + method + self.image_extension)
         if self.sliced:
-            plot_image(labels1,
+            reshaped1 = labels1.reshape(mris_shape)
+            cropped1 = crop_center(reshaped1, self.target_shape)
+            plot_image(cropped1,
                        m1_filename,
                        shaded_labels=1.0,
                        colormap=colormap_fusion(main_clusters),
-                       mris_shape=mris_shape)
-            plot_image(labels2,
+                       mris_shape=mris_shape,
+                       plotbar=False)
+            reshaped2 = labels2.reshape(mris_shape)
+            cropped2 = crop_center(reshaped2, self.target_shape)
+            plot_image(cropped2,
                        m2_filename,
                        shaded_labels=1.0,
                        colormap=colormap_fusion(main_clusters),
-                       mris_shape=mris_shape)
+                       mris_shape=mris_shape,
+                       plotbar=False)
         else:
             reshaped1 = labels1.reshape(mris_shape)
             cropped1 = crop_center(reshaped1[:, :, self.chosen_slice], self.target_shape)
