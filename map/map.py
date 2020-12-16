@@ -3,7 +3,6 @@ import leveled_kmeans
 import mapping
 import nesting
 import numpy as np
-from scipy.cluster.hierarchy import fcluster
 
 from util.util import print_timestamped, info, remove_background, add_background, filter_blur, common_nonzero
 
@@ -51,7 +50,7 @@ class Mapping:
                     d1 = leveled_kmeans.build_agglomerative_dendogram(d_d1, k_list_div)
                     d2 = leveled_kmeans.build_agglomerative_dendogram(d_d2, k_list_div)
 
-                print_timestamped("Computed nesting dendograms for the two MRIs.")
+                print_timestamped("Computed dendograms for the two MRIs.")
                 # We find the mapping, but we only need to find it for d1, because then d2 will be mapped to d1
                 self.table.add_entry(m1, d1, m2, d2, mri_lab_train)
                 print_timestamped("Entry added to the tables.")
