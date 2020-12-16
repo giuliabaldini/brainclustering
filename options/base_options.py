@@ -70,8 +70,7 @@ class BaseOptions():
                             choices=[-1, 0, 1, 2],
                             help='the kind of post-processing to apply to the images. -1 means no postprocessing, '
                                  '0 means scale in range [0, 1], '
-                                 '1 means normalize with unit variance and mean 0,'
-                                 'and 2 means scale to be in range [0, 1] and then normalize in range [-1, 1].')
+                                 '1 means normalize with unit variance and mean 0.')
 
         return parser
 
