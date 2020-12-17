@@ -247,13 +247,13 @@ namespace brainclustering {
             auto *new_data_seq2 = get_c_array<value_type>(new_data_vector_seq2);
 
 
-            /*for (size_t cluster = 0; cluster < n_cluster_main_; ++cluster) {
-                std::cout << "Looking up the " << cluster << "th map" << std::endl;
+            for (size_t cluster = 0; cluster < n_cluster_main_; ++cluster) {
+                std::cout << "Looking up the " << cluster + 1 << "th map" << std::endl;
                 for (auto p : vec_map_[cluster]) {
                     std::cout << "x: " << p.first << ", y: " << p.second.first << ", " <<
                               p.second.second << " times." << std::endl;
                 }
-            }*/
+            }
             std::vector <std::vector<int>> cost_matrix(n_cluster_main_, std::vector<int>(n_cluster_main_, 0));
 
             for (int i = 0; i < labels_vector_seq1.shape(0); ++i) {
@@ -269,27 +269,30 @@ namespace brainclustering {
                 if (found == vec_map_[mapped_cluster].end()) {
                     // Find the upper bound
                     auto upper = vec_map_[mapped_cluster].upper_bound(data_seq1[i]);
+                    // Set the lower bound to the upperbound
+                    auto lower = upper;
                     // If we are at the beginning of the table
                     if (upper == vec_map_[mapped_cluster].begin()) {
-                        new_data_seq2[i] = upper->second.first;
-                        continue;
+                        new_data_seq2[i] = (upper->second.first * data_seq1[i]) / upper->first;
+                        // If we are at the end of the table
+                    } else if (upper == vec_map_[mapped_cluster].end()) {
+                        // Decrease upper
+                        lower = --upper;
+                        new_data_seq2[i] = (upper->second.first * data_seq1[i]) / upper->first;
+                    } else {
+                        // Otherwise do interpolation
+                        --lower;
+                        new_data_seq2[i] =
+                                (lower->second.first * (upper->first - data_seq1[i]) +
+                                 upper->second.first * (data_seq1[i] - lower->first)) /
+                                (upper->first - lower->first);
                     }
-                    auto lower = upper;
-                    lower--;
-                    // If we are at the end of the table
-                    if (upper == vec_map_[mapped_cluster].end()) {
-                        new_data_seq2[i] = lower->second.first;
-                        continue;
-                    }
-                    //std::cout << "Point " << data_seq1[i] << ", cluster " << labels_seq1[i] <<
-                    //          ". Lowerbound: " << lower->first << ", upperbound " << upper->first << "." << std::endl;
-                    // Otherwise do interpolation
-                    new_data_seq2[i] =
-                            (lower->second.first * (upper->first - data_seq1[i]) +
-                             upper->second.first * (data_seq1[i] - lower->first)) /
-                            (upper->first - lower->first);
-                    //std::cout << "New point " << new_data_seq2[i] << ". Lowerbound: " << lower->second.first << ", upperbound "
-                    //          << upper->second.first << "." << std::endl;
+                    std::cout << "Point " << data_seq1[i] << ", cluster " << labels_seq1[i] <<
+                              "; Lowerbound: " << lower->first <<
+                              ", upperbound " << upper->first << std::endl;
+                    std::cout << "New point " << new_data_seq2[i] << "; " <<
+                              "Lowerbound: " << lower->second.first <<
+                              ", upperbound " << upper->second.first << "" << std::endl;
                 } else {
                     // If found, give the same value
                     new_data_seq2[i] = found->second.first;
