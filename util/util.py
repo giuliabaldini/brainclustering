@@ -390,9 +390,6 @@ def filter_blur(mapped, mris_shape, mode="median", k_size=3):
         dst = cv.blur(r_mapped, ksize=(k_size, k_size))
     elif mode == "gblur":
         dst = cv.GaussianBlur(r_mapped, k_size=(k_size, k_size), sigmaX=0)
-    elif mode == "nonlocalmeans":
-        dst = cv.fastNlMeansDenoising((r_mapped * 255).astype(np.uint8), h=10)
-        dst = normalize_zero_one(dst)
     else:
         error("Smoothing mode not recognized.")
 

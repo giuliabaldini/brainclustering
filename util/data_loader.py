@@ -109,6 +109,7 @@ class DataLoader:
         # Find the source image
         source = self.load_and_check(filepath, self.mapping_source)
         if source is not None:
+            # TODO
             source = remove_outliers(source, self.mapping_source)
             imgs['source'] = source
         else:
