@@ -1,7 +1,7 @@
 import nibabel as nib
 import numpy as np
 
-from util.util import transform_single, warning, error, remove_outliers
+from util.util import transform_single, warning, error, remove_outliers, normalize_with_opt
 
 
 class DataLoader:
@@ -71,8 +71,9 @@ class DataLoader:
         # Find the target image
         target = self.load_and_check(filepath, self.mapping_target)
         if target is not None:
-            # TODO: Remove outliers works for T1, but doesn't for T2
-            target = remove_outliers(target, self.mapping_target)
+            # TODO: Find a way to make the T2 clusters always compatible
+            # target = remove_outliers(target, self.mapping_target)
+            target = normalize_with_opt(target, 0)
             imgs['target'] = target
 
         # If we are in search or train, we need both target and source
