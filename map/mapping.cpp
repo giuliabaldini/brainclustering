@@ -247,13 +247,13 @@ namespace brainclustering {
             auto *new_data_seq2 = get_c_array<value_type>(new_data_vector_seq2);
 
 
-            for (size_t cluster = 0; cluster < n_cluster_main_; ++cluster) {
+            /*for (size_t cluster = 0; cluster < n_cluster_main_; ++cluster) {
                 std::cout << "Looking up the " << cluster + 1 << "th map" << std::endl;
                 for (auto p : vec_map_[cluster]) {
                     std::cout << "x: " << p.first << ", y: " << p.second.first << ", " <<
                               p.second.second << " times." << std::endl;
                 }
-            }
+            }*/
             std::vector <std::vector<int>> cost_matrix(n_cluster_main_, std::vector<int>(n_cluster_main_, 0));
 
             for (int i = 0; i < labels_vector_seq1.shape(0); ++i) {
@@ -287,12 +287,12 @@ namespace brainclustering {
                                  upper->second.first * (data_seq1[i] - lower->first)) /
                                 (upper->first - lower->first);
                     }
-                    std::cout << "Point " << data_seq1[i] << ", cluster " << labels_seq1[i] <<
+                    /*std::cout << "Point " << data_seq1[i] << ", cluster " << labels_seq1[i] <<
                               "; Lowerbound: " << lower->first <<
                               ", upperbound " << upper->first << std::endl;
                     std::cout << "New point " << new_data_seq2[i] << "; " <<
                               "Lowerbound: " << lower->second.first <<
-                              ", upperbound " << upper->second.first << "" << std::endl;
+                              ", upperbound " << upper->second.first << "" << std::endl;*/
                 } else {
                     // If found, give the same value
                     new_data_seq2[i] = found->second.first;
