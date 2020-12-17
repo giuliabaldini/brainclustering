@@ -27,7 +27,7 @@ if __name__ == "__main__":
     sub_clusters = opts.sub_clusters
 
     info("Creating cluster mapping from " + mapping_source + " to " + mapping_target +
-         " with " + str(data_loader.all_files_size) + " training images.")
+         " with " + str(data_loader.train_files_size) + " training images.")
 
     time_init = time.time()
     print_timestamped("Retrieved data for labeled image.")
@@ -36,4 +36,4 @@ if __name__ == "__main__":
     # Train
     table = map.cluster_mapping()
     time_end = round(time.time() - time_init, 3)
-    print("Time spent for training " + str(data_loader.all_files_size) + " images " + str(time_end) + "s.")
+    print("Time spent for training " + str(data_loader.train_files_size) + " images " + str(time_end) + "s.")

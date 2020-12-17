@@ -18,7 +18,7 @@ class PlotHandler:
 
     def __init__(self, args, options, complementary=False):
         self.output_data_folder = options.output_data_folder
-        self.phase = options.phase
+        self.phase = options.phase  # 0 search, 1 train, 2 test
         self.prefix = options.prefix
         self.mapping_source = args.mapping_source
         self.mapping_target = args.mapping_target
@@ -45,10 +45,13 @@ class PlotHandler:
         if self.phase != 1:
             specific_name += "_" + str(args.postprocess)
 
-        if self.phase == 1:
+        if self.phase == 0:
+            self.plot_folder = base / (args.test_set + "_" + self.prefix + specific_name)
+        elif self.phase == 1:
             self.plot_folder = base / (self.prefix + specific_name)
         else:
             self.plot_folder = base / (args.test_set + specific_name)
+
         self.plot_folder.mkdir(parents=True, exist_ok=True)
 
         self.train_folder = None
@@ -126,9 +129,9 @@ class PlotHandler:
 
     def plot_shaded_labels(self, patient_name, labels1, labels2, method, main_clusters, mris_shape, affine):
         m1_filename = self.labels_folder / (
-                    patient_name + "_" + self.mapping_source + "_labels_" + method + self.image_extension)
+                patient_name + "_" + self.mapping_source + "_labels_" + method + self.image_extension)
         m2_filename = self.labels_folder / (
-                    patient_name + "_" + self.mapping_target + "_labels_" + method + self.image_extension)
+                patient_name + "_" + self.mapping_target + "_labels_" + method + self.image_extension)
         if self.sliced:
             reshaped1 = labels1.reshape(mris_shape)
             cropped1 = crop_center(reshaped1, self.target_shape)

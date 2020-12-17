@@ -47,7 +47,7 @@ if __name__ == "__main__":
     map.restore_table(model)
 
     time_init = time.time()
-    for query_filename in data_loader.all_files:
+    for query_filename in data_loader.query_files:
         query_friendly_filename = query_filename.name
         info("Testing with image " + query_friendly_filename + ", please make sure that you used the same "
                                                                "settings as for training.")
@@ -80,5 +80,5 @@ if __name__ == "__main__":
         plot_handler.plot_results(mris, query_friendly_filename, opts.smoothing, data_loader.mri_shape,
                                   data_loader.affine)
     time_end = round(time.time() - time_init, 3)
-    print("Time spent for testing " + str(data_loader.all_files_size) + " images " + str(time_end) + "s.")
+    print("Time spent for testing " + str(data_loader.query_files_size) + " images " + str(time_end) + "s.")
     excel.close()

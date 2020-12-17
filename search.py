@@ -30,62 +30,63 @@ if __name__ == "__main__":
     excel_filepath = plot_handler.plot_folder / (opts.test_set + "_" + opts.experiment_name + ".csv")
     excel = ExcelEvaluate(excel_filepath, opts.excel)
 
-    # Find the query MRI
-    query_filepath = data_loader.query_folder / opts.query_filename
-    query_friendly_filename = query_filepath.name
-    query_mris = data_loader.return_file(query_filepath, query_file=True)
-    mse_list = []
-    best_filenames = []
+    # Iterate through the query MRIs
+    for query in data_loader.query_files:
+        save_model_folder = save_model_folder / query.name
+        save_model_folder.mkdir(parents=True, exist_ok=True)
+        query_mris = data_loader.return_file(query, query_file=True)
+        mse_list = []
+        best_filenames = []
 
-    # Find the X MRIs with the best MSE to our source mapping
-    time_init = time.time()
-    for filename in data_loader.all_files:
-        curr_mris = data_loader.return_file(filename)
-        # Normalize image image according to the selected preprocessing
-        mse = mse_computation(query_mris['source'], curr_mris['source'])
-        mse_list.append(mse)
-        best_filenames.append(filename)
+        # Find the X MRIs with the best MSE to our source mapping
+        time_init = time.time()
+        for filename in data_loader.train_files:
+            curr_mris = data_loader.return_file(filename)
+            # Normalize image image according to the selected preprocessing
+            mse = mse_computation(query_mris['source'], curr_mris['source'])
+            mse_list.append(mse)
+            best_filenames.append(filename)
 
-    # Choose the X best MRIs
-    chosen_filenames = [filename for _, filename in sorted(zip(mse_list, best_filenames))][:opts.n_images]
-    data_loader.set_chosen_filenames(chosen_filenames)
+        # Choose the X best MRIs
+        chosen_filenames = [filename for _, filename in sorted(zip(mse_list, best_filenames))][:opts.n_images]
+        data_loader.set_training_filenames(chosen_filenames)
 
-    info("Creating cluster mapping from " + mapping_source + " to " + mapping_target + " with " + str(
-        data_loader.all_files_size) + " selected training images.")
+        info("Creating cluster mapping from " + mapping_source + " to " + mapping_target + " with " + str(
+            data_loader.train_files_size) + " selected training images.")
 
-    # Collect either the segmented image, or a clustering of the first training image
-    print_timestamped("Retrieved data for labeled image.")
-    map = Mapping(data_loader, plot_handler, save_model_folder, main_clusters, sub_clusters, opts.method)
+        # Collect either the segmented image, or a clustering of the first training image
+        print_timestamped("Retrieved data for labeled image.")
+        map = Mapping(data_loader, plot_handler, save_model_folder, main_clusters, sub_clusters, opts.method)
 
-    # Train
-    map.cluster_mapping()
+        # Train
+        map.cluster_mapping()
 
-    # Check if we have a truth file to compute the MSE
-    truth_nonzero = None
-    if 'truth' in query_mris:
-        # Consider the truth about the tumour
-        truth_mri, truth_nonzero = remove_background(query_mris['truth'])
+        # Check if we have a truth file to compute the MSE
+        truth_nonzero = None
+        if 'truth' in query_mris:
+            # Consider the truth about the tumour
+            truth_mri, truth_nonzero = remove_background(query_mris['truth'])
 
-        # If the truth is not there, then we don't have any tumour on this slice
-        if len(truth_nonzero) == 0:
-            truth_nonzero = None
-            warning("The slice " + str(opts.chosen_slice) + " does not contain any tumour, "
-                                                            "and thus the tumour MSE cannot be computed.")
-        else:
-            plot_handler.print_tumour(query_mris['truth'], query_friendly_filename, data_loader.mri_shape,
-                                      data_loader.affine)
+            # If the truth is not there, then we don't have any tumour on this slice
+            if len(truth_nonzero) == 0:
+                truth_nonzero = None
+                warning("The slice " + str(opts.chosen_slice) + " does not contain any tumour, "
+                                                                "and thus the tumour MSE cannot be computed.")
+            else:
+                plot_handler.print_tumour(query_mris['truth'], query.name, data_loader.mri_shape,
+                                          data_loader.affine)
 
-    print_timestamped("Processing query " + query_friendly_filename + ".")
+        print_timestamped("Processing query " + query.name + ".")
 
-    mris = map.return_results_query(query_mris, opts.smoothing)
-    if 'target' in mris:
-        excel.evaluate(mris, query_friendly_filename, truth_nonzero, opts.smoothing)
+        mris = map.return_results_query(query_mris, opts.smoothing)
+        if 'target' in mris:
+            excel.evaluate(mris, query.name, truth_nonzero, opts.smoothing)
 
-    for label in mris.keys():
-        if 'truth' not in label:
-            mris[label] = normalize_with_opt(mris[label], opts.postprocess)
+        for label in mris.keys():
+            if 'truth' not in label:
+                mris[label] = normalize_with_opt(mris[label], opts.postprocess)
 
-    plot_handler.plot_results(mris, query_friendly_filename, opts.smoothing, data_loader.mri_shape, data_loader.affine)
-    time_end = round(time.time() - time_init, 3)
-    print("Time spent for searching " + str(data_loader.all_files_size) + " images " + str(time_end) + "s.")
+        plot_handler.plot_results(mris, query.name, opts.smoothing, data_loader.mri_shape, data_loader.affine)
+        time_end = round(time.time() - time_init, 3)
+        print("Time spent for searching " + str(data_loader.train_files_size) + " images " + str(time_end) + "s.")
     excel.close()

@@ -78,13 +78,6 @@ class BaseOptions():
 
         self.output_data_folder.mkdir(parents=True, exist_ok=True)
 
-        if hasattr(args, 'labeled_filename'):
-            self.segmented = True
-            args.labeled_filename = Path(os.getcwd()) / str(args.labeled_filename)
-            if not (Path.cwd() / args.labeled_filename).exists():
-                warning("No segmented file has been specified, the first training image will be chosen for reference.")
-                self.segmented = False
-
         if args.method == "kmeans" and args.sub_clusters % args.main_clusters != 0:
             error("KMEANS: The smaller clusters cannot be equally divided over the main clusters. "
                   "Please change the number of smaller clusters to a value divisible by the number of main cluster.")

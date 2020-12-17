@@ -1,8 +1,7 @@
-import kmeans1d
 import nibabel as nib
 import numpy as np
 
-from util.util import info, transform_single, warning, error, remove_background, remove_outliers
+from util.util import transform_single, warning, error, remove_outliers
 
 
 class DataLoader:
@@ -23,21 +22,15 @@ class DataLoader:
             self.labeled_image = args.labeled_filename
 
         # Set files for training/querying
-        if self.phase < 2:
-            search_dir = self.train_folder
-        else:
-            search_dir = self.query_folder
+        self.train_files = sorted(self.train_folder.iterdir())
+        self.query_files = sorted(self.query_folder.iterdir())
 
-        if self.phase == 2 and args.query_filename is not None and (search_dir / args.query_filename).exists():
-            self.all_files = [search_dir / args.query_filename]
-        else:
-            self.all_files = sorted(search_dir.iterdir())
+        self.train_files_size = len(self.train_files)
+        self.query_files_size = len(self.query_files)
 
-        self.all_files_size = len(self.all_files)
-
-    def set_chosen_filenames(self, files):
-        self.all_files = files
-        self.all_files_size = len(files)
+    def set_training_filenames(self, files):
+        self.train_files = files
+        self.train_files_size = len(files)
 
     def check_affine(self, new_affine):
         if self.affine is None:
@@ -50,7 +43,8 @@ class DataLoader:
             self.mri_shape = new_shape
         elif self.mri_shape != new_shape:
             warning(
-                "One of the shapes of the MRIs you just loaded does not correspond, this might create problems when plotting.")
+                "One of the shapes of the MRIs you just loaded does not correspond, "
+                "this might create problems when plotting.")
 
     def load_and_check(self, root, name):
         files = list(root.glob("*" + name + ".nii*"))
@@ -63,53 +57,12 @@ class DataLoader:
             self.check_shape(mri_shape)
         return t_img
 
-    def return_model_segmented_image(self, model_path, method, main, sub):
-        to_find = "lab_" + method + "_main" + str(main) + "_sub" + str(sub)
-        files = list(model_path.glob(to_find + ".nii*"))
-        img = None
-        if len(files) > 0:
-            nifti = nib.load(files[0])
-            self.check_affine(nifti.affine)
-            img = nifti.get_fdata()
-            self.check_shape(img.shape)
-        else:
-            error("Reference image for " + to_find + " not found.")
-        return np.ravel(img)
-
-    def return_segmented_image(self, first_training):
-        high_clusters = False
-        reference_mri = None
-        if self.labeled_image is not None:
-            info("With a segmented image for label mapping.")
-            reference_mri = self.load_and_check(self.labeled_image, "segmentation")
-            n_labels = len(np.unique(reference_mri))
-            if n_labels - 1 < self.main_clusters:
-                warning("The number of main clusters selected cannot be mapped to the default segmented image. " +
-                        "Selecting a training image instead.")
-                high_clusters = True
-            else:
-                if n_labels - 1 > self.main_clusters:
-                    for i in range(self.main_clusters, n_labels - 1):
-                        reference_mri[np.where(reference_mri == i + 1)] = 0.0
-
-        if self.labeled_image is None or high_clusters:
-            info("The image chosen for label mapping is " + str(first_training) + ".")
-            self.labeled_image = first_training
-            first_image_source = self.load_and_check(first_training, self.mapping_source)
-            reference_mri = np.zeros(first_image_source.shape[0])
-            m1, nonzero = remove_background(first_image_source)
-            # We use optimal1d
-            l1, _ = kmeans1d.cluster(m1, self.main_clusters)
-            l1 = np.array([(lab + 1) for lab in l1], dtype=np.float_)
-            reference_mri[nonzero] = l1
-        return reference_mri
-
     def return_file(self, filepath, query_file=False):
         imgs = {}
         # Find the source image
         source = self.load_and_check(filepath, self.mapping_source)
         if source is not None:
-            # TODO
+            # TODO: Remove outliers works for T1, but doesn't for T2
             source = remove_outliers(source, self.mapping_source)
             imgs['source'] = source
         else:
@@ -118,6 +71,7 @@ class DataLoader:
         # Find the target image
         target = self.load_and_check(filepath, self.mapping_target)
         if target is not None:
+            # TODO: Remove outliers works for T1, but doesn't for T2
             target = remove_outliers(target, self.mapping_target)
             imgs['target'] = target
 

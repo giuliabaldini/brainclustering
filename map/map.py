@@ -24,12 +24,11 @@ class Mapping:
         info("Mapping with clustering " + self.method + " with " + str(self.main_clusters) + " main clusters and " +
              str(self.sub_clusters) + " smaller clusters.")
         try:
-            for i, filename in enumerate(self.data_loader.all_files):
-                print_friendly_filename = filename.name
-                print_timestamped("Processing image " + print_friendly_filename + ".")
+            for i, filename in enumerate(self.data_loader.train_files):
+                print_timestamped("Processing image " + filename.name + ".")
                 current_mris = self.data_loader.return_file(filename)
                 self.plot_handler.plot_train(current_mris,
-                                             print_friendly_filename,
+                                             filename.name,
                                              self.data_loader.mri_shape,
                                              self.data_loader.affine)
                 print_timestamped("Transformed data.")
@@ -66,7 +65,7 @@ class Mapping:
                     labels = np.zeros(m2.shape[0])
                     nesting.build_labels(labels, d2, k_list_aggl, 1, 1.0)
                     new_labels_m2 = add_background(labels, current_mris['target'].shape[0], common_nonzero_train)
-                    self.plot_handler.plot_shaded_labels(print_friendly_filename, new_labels_m1, new_labels_m2,
+                    self.plot_handler.plot_shaded_labels(filename.name, new_labels_m1, new_labels_m2,
                                                          self.method, self.main_clusters, self.data_loader.mri_shape,
                                                          self.data_loader.affine)
         except MemoryError:
