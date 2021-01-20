@@ -61,7 +61,7 @@ class BaseOptions():
                             help='choose to print an excel file with useful information (1) or not (0)')
 
         parser.add_argument('--postprocess', type=int, default=-1, const=-1, nargs='?',
-                            choices=[-1, 0, 1, 2],
+                            choices=[-1, 0, 1],
                             help='the kind of post-processing to apply to the images. -1 means no postprocessing, '
                                  '0 means scale in range [0, 1], '
                                  '1 means normalize with unit variance and mean 0.')
