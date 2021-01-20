@@ -1,12 +1,13 @@
 import os
 import sys
+import time
+
 from options.search_options import SearchOptions
+from util.data_loader import DataLoader
+from util.evaluation import ExcelEvaluate
+from util.plot_handler import PlotHandler
 from util.util import print_timestamped, info, warning, get_timestamp, mse_computation, \
     remove_background, normalize_with_opt
-from util.evaluation import ExcelEvaluate
-from util.data_loader import DataLoader
-from util.plot_handler import PlotHandler
-import time
 
 sys.path.append(os.getcwd() + "/build/cluster")  # Fix this, make it nicer
 sys.path.append(os.getcwd() + "/build/map")  # Fix this, make it nicer
@@ -31,6 +32,7 @@ if __name__ == "__main__":
     excel = ExcelEvaluate(excel_filepath, opts.excel)
 
     # Iterate through the query MRIs
+    time_init_total = time.time()
     for query in data_loader.query_files:
         save_model_folder = save_model_folder / query.name
         save_model_folder.mkdir(parents=True, exist_ok=True)
@@ -88,5 +90,7 @@ if __name__ == "__main__":
 
         plot_handler.plot_results(mris, query.name, opts.smoothing, data_loader.mri_shape, data_loader.affine)
         time_end = round(time.time() - time_init, 3)
-        print("Time spent for searching " + str(data_loader.train_files_size) + " images " + str(time_end) + "s.")
+        print("Time spent for searching the current image: " + str(time_end) + "s.")
+    time_end = round(time.time() - time_init_total, 3)
+    print("Time spent for searching " + str(data_loader.train_files_size) + " images " + str(time_end) + "s.")
     excel.close()
