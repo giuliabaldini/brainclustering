@@ -4,7 +4,7 @@ import mapping
 import nesting
 import numpy as np
 
-from util.util import print_timestamped, info, remove_background, add_background, filter_blur, common_nonzero
+from util.util import print_timestamped, info, remove_background, add_background, filter_blur, nonzero_union
 
 
 class Mapping:
@@ -32,7 +32,7 @@ class Mapping:
                                              self.data_loader.mri_shape,
                                              self.data_loader.affine)
                 print_timestamped("Transformed data.")
-                common_nonzero_train = common_nonzero([current_mris['source'], current_mris['target']])
+                common_nonzero_train = nonzero_union(current_mris['source'], current_mris['target'])
                 m1, _ = remove_background(current_mris['source'], nonzero_indices=common_nonzero_train)
                 m2, _ = remove_background(current_mris['target'], nonzero_indices=common_nonzero_train)
                 print_timestamped("Removed background.")

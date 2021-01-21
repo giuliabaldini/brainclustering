@@ -2,11 +2,13 @@ import os
 import sys
 import time
 
+import numpy as np
+
 from options.search_options import SearchOptions
 from util.data_loader import DataLoader
 from util.evaluation import ExcelEvaluate
 from util.plot_handler import PlotHandler
-from util.util import print_timestamped, info, warning, get_timestamp, mse_computation, \
+from util.util import print_timestamped, info, warning, get_timestamp, \
     remove_background, normalize_with_opt
 
 sys.path.append(os.getcwd() + "/build/cluster")  # Fix this, make it nicer
@@ -38,19 +40,17 @@ if __name__ == "__main__":
         save_model_folder.mkdir(parents=True, exist_ok=True)
         query_mris = data_loader.return_file(query, query_file=True)
         mse_list = []
-        best_filenames = []
 
         # Find the X MRIs with the best MSE to our source mapping
         time_init = time.time()
         for filename in data_loader.train_files:
             curr_mris = data_loader.return_file(filename)
             # Normalize image image according to the selected preprocessing
-            mse = mse_computation(query_mris['source'], curr_mris['source'])
-            mse_list.append(mse)
-            best_filenames.append(filename)
+            mse = np.square(np.subtract(query_mris['source'], curr_mris['source'])).mean()
+            mse_list.append((mse, filename))
 
         # Choose the X best MRIs
-        chosen_filenames = [filename for _, filename in sorted(zip(mse_list, best_filenames))][:opts.n_images]
+        chosen_filenames = [filename for _, filename in sorted(mse_list)][:opts.n_images]
         data_loader.set_training_filenames(chosen_filenames)
 
         info("Creating cluster mapping from " + mapping_source + " to " + mapping_target + " with " + str(

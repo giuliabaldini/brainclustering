@@ -9,7 +9,6 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
     mutual_info_score, normalized_mutual_info_score
 from sklearn.metrics.cluster import contingency_matrix, adjusted_rand_score, homogeneity_completeness_v_measure, \
     fowlkes_mallows_score
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 
 def _comb2(n):
@@ -223,30 +222,14 @@ def adjust_labels_with_background_segmented(labels_with_background, segmentation
     return labels_with_background
 
 
-def common_nonzero(transformed_mris):
-    common_nonzero_set = set()
-    for i in range(len(transformed_mris)):
-        common_nonzero_set = common_nonzero_set.union(set(np.nonzero(transformed_mris[i])[0]))
-
-    return np.array(list(common_nonzero_set))
-
-
-def intersect_nonzero(transformed_mris):
-    common_nonzero_set = set(np.nonzero(transformed_mris[0])[0])
-    for t_mri in transformed_mris[1:]:
-        common_nonzero_set = common_nonzero_set.intersection(set(np.nonzero(t_mri)[0]))
-
-    return np.array(list(common_nonzero_set))
+def nonzero_union(arr1, arr2):
+    mul = arr1 * arr2
+    return np.nonzero(mul)
 
 
 def non_common_indices(indices1, indices2):
     return np.nonzero(np.isin(indices1, indices2, invert=True))[0], \
            np.nonzero(np.isin(indices2, indices1, invert=True))[0]
-
-
-def mse_computation(seq, learned_seq):
-    common = common_nonzero([seq, learned_seq])
-    return np.mean(np.square(seq[common] - learned_seq[common]))
 
 
 def remove_outliers(arr, scan_type):
@@ -262,7 +245,7 @@ def remove_outliers(arr, scan_type):
     lower, upper = q25 - cut_off, q75 + cut_off
     # print(lower, upper)
     # Remove outliers above
-    # TODO: Is this correct? Definitely for t1 and t2
+    # TODO: Is this correct? Definitely for t1 -> t2
     if "t1" in scan_type:
         arr[arr > upper] = arr.min()
     else:
@@ -274,30 +257,13 @@ def remove_outliers(arr, scan_type):
 
 
 def normalize_with_opt(arr, opt):
-    # print("[", arr.min(), arr.max(), "]", end=" - ")
+    # print(opt, "[", arr.min(), arr.max(), "]", end=" - ")
     if opt == 0:
-        MinMaxScaler(copy=False).fit_transform(arr.reshape(-1, 1))
-        arr = arr.reshape(arr.shape[0])
+        return (arr - arr.min()) / (arr.max() - arr.min())
     elif opt == 1:
-        trans = StandardScaler(copy=False).fit(arr[arr > 0].reshape(-1, 1))
-        trans.transform(arr.reshape(-1, 1))
-        arr = arr.reshape(arr.shape[0])
+        return arr - np.mean(arr[arr > 0]) / np.std(arr[arr > 0])
     # print("[", arr.min(), arr.max(), "]")
     return arr
-
-
-def unsharp_mask(image, kernel_size=(5, 5), sigma=1.0, amount=1.0, threshold=1.0):
-    """Return a sharpened version of the image, using an unsharp mask."""
-    blurred = cv.GaussianBlur(image, kernel_size, sigma)
-    sharpened = image * (1 + amount) + blurred * (-amount)
-    # sharpened = float(amount + 1) * image - float(amount) * blurred
-    # sharpened = np.maximum(sharpened, np.zeros(sharpened.shape))
-    # sharpened = np.minimum(sharpened, 255 * np.ones(sharpened.shape))
-    # sharpened = sharpened.round().astype(np.uint8)
-    if threshold > 0:
-        low_contrast_mask = np.abs(image - blurred) < threshold
-        np.copyto(sharpened, image, where=low_contrast_mask)
-    return sharpened
 
 
 def get_stats(truth, pred):

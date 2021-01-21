@@ -1,6 +1,6 @@
 import numpy as np
-import time
-from util.util import error, print_timestamped, common_nonzero, normalize_with_opt
+
+from util.util import error, print_timestamped, nonzero_union, normalize_with_opt
 
 
 class ExcelEvaluate:
@@ -18,14 +18,13 @@ class ExcelEvaluate:
                 "filter",
                 "MSE",
                 "relMSE",
-                "TumourMSE",
                 "sMAPE",
-                "SMSE",
-                "scaledMSE",
-                "scaledrelMSE",
-                "scaledTumourMSE",
-                "scaledsMAPE",
-                "scaledSMSE",
+                "TumourMSE",
+                "scaled_MSE",
+                "scaled_relMSE",
+                "scaled_sMAPE",
+                "scaled_TumourMSE",
+
             ]
             for i, n in enumerate(init_rows):
                 self.ff.write(n)
@@ -43,38 +42,35 @@ class ExcelEvaluate:
                 self.ff.write("\n")
 
     def evaluate(self, mri_dict, query_name, truth_nonzero, smoothing):
-        mse, relmse, tumour, smape, smse = evaluate_result(mri_dict['target'],
-                                                           mri_dict['learned_target'],
-                                                           tumour_indices=truth_nonzero,
-                                                           mris_shape=None)
-        s_mse, s_relmse, s_tumour, s_smape, s_smse = evaluate_result(mri_dict['target'],
-                                                                     mri_dict['learned_target_smoothed'],
-                                                                     tumour_indices=truth_nonzero,
-                                                                     mris_shape=None)
+        mse, relmse, smape, tumour = evaluate_result(mri_dict['target'],
+                                                     mri_dict['learned_target'],
+                                                     tumour_indices=truth_nonzero)
+        smooth_mse, smooth_relmse, smooth_smape, smooth_tumour = evaluate_result(mri_dict['target'],
+                                                                                 mri_dict['learned_target_smoothed'],
+                                                                                 tumour_indices=truth_nonzero)
         print_timestamped("Computing MSE on the scaled data")
-        r_real = normalize_with_opt(mri_dict['target'], 0)
-        r_predicted = normalize_with_opt(mri_dict['learned_target'], 0)
-        r_predicted_smoothed = normalize_with_opt(mri_dict['learned_target_smoothed'], 0)
-        scaledmse, scaledrelmse, scaledtumour, scaledsmape, scaledsmse = evaluate_result(r_real,
-                                                                                         r_predicted,
-                                                                                         tumour_indices=truth_nonzero,
-                                                                                         mris_shape=None)
-        scaleds_mse, scaleds_relmse, scaleds_tumour, scaleds_smape, scaleds_smse = evaluate_result(r_real,
-                                                                                                   r_predicted_smoothed,
-                                                                                                   tumour_indices=truth_nonzero,
-                                                                                                   mris_shape=None)
+        # Scale data in 0,1 and compute everything again
+        s_real = normalize_with_opt(mri_dict['target'], 0)
+        s_predicted = normalize_with_opt(mri_dict['learned_target'], 0)
+        s_predicted_smoothed = normalize_with_opt(mri_dict['learned_target_smoothed'], 0)
+        scaled_mse, scaled_relmse, scaled_smape, scaled_tumour = evaluate_result(s_real,
+                                                                                 s_predicted,
+                                                                                 tumour_indices=truth_nonzero)
+        s_smooth_mse, s_smooth_relmse, s_smooth_smape, s_smooth_tumour = evaluate_result(s_real,
+                                                                                         s_predicted_smoothed,
+                                                                                         tumour_indices=truth_nonzero)
         if smoothing == "median":
             smoothing = 0
         elif smoothing == "average":
             smoothing = 1
         if self.excel:
             self.print_to_excel([query_name, -1,
-                                 mse, relmse, tumour, smape, smse,
-                                 scaledmse, scaledrelmse, scaledtumour, scaledsmape, scaledsmse,
+                                 mse, relmse, smape, tumour,
+                                 scaled_mse, scaled_relmse, scaled_smape, scaled_tumour,
                                  ])
             self.print_to_excel([query_name, smoothing,
-                                 s_mse, s_relmse, s_tumour, s_smape, s_smse,
-                                 scaleds_mse, scaleds_relmse, scaleds_tumour, scaleds_smape, scaleds_smse
+                                 smooth_mse, smooth_relmse, smooth_tumour, smooth_smape,
+                                 s_smooth_mse, s_smooth_relmse, s_smooth_tumour, s_smooth_smape,
                                  ])
 
     def close(self):
@@ -113,25 +109,23 @@ def square_index(curr, shape, radius):
     return indices
 
 
-def mse_computation(seq, learned_seq):
-    common = common_nonzero([seq, learned_seq])
-    return np.mean(np.square(seq[common] - learned_seq[common]))
-
-
-def evaluate_result(seq, learned_seq, tumour_indices=None, mris_shape=None, square_radius=2, round_fact=6,
-                    multiplier=1):
-    init = time.time()
+def evaluate_result(seq, learned_seq, tumour_indices=None, round_fact=6, multiplier=1):
     if seq.shape != learned_seq.shape:
         error("The shape of the target and learned sequencing are not the same.")
+    elif len(seq.shape) > 1:
+        error("The evaluation is perfomed only on 1D arrays.")
 
-    smse = None
     tumour = None
-    common = common_nonzero([seq, learned_seq])
+    nonzero_values = nonzero_union(seq, learned_seq)
+    ground_truth = seq[nonzero_values]
+    prediction = learned_seq[nonzero_values]
 
-    mse = np.mean(np.square(seq[common] - learned_seq[common]))
-    relmse = mse / np.mean(np.square(seq[common]))
-    smape = np.sum(np.abs(seq[common] - learned_seq[common])) / \
-            np.sum(np.abs(learned_seq[common]) + np.abs(seq[common]))
+    # MSE: avg((A-B)^2)
+    mse = (np.square(np.subtract(ground_truth, prediction))).mean()
+    # RelMSE
+    relmse = mse / np.square(ground_truth).mean()
+    # SMAPE = sum |F - A| / sum |A| + |F|
+    smape = np.sum(np.abs(ground_truth - prediction)) / np.sum(prediction + ground_truth)
 
     mse = round(mse * multiplier, round_fact)
     print("The mean squared error is " + str(mse) + ".")
@@ -142,23 +136,9 @@ def evaluate_result(seq, learned_seq, tumour_indices=None, mris_shape=None, squa
     smape = round(smape, round_fact)
     print("The symmetric mean absolute percentage error is " + str(smape) + ".")
 
-    if mris_shape is not None:
-        stored_smse = np.zeros((square_radius * 2 + 1) ** len(mris_shape))
-        for pixel in common:
-            square_indices = square_index(pixel, mris_shape, square_radius)
-            if len(square_indices) != len(stored_smse):
-                continue
-            for j, q_index in enumerate(square_indices):
-                stored_smse[j] += (learned_seq[pixel] - seq[q_index]) ** 2
-        smse = (min(stored_smse) / len(common)) * multiplier
-        smse = round(smse, round_fact)
-        print("The shifted MSE is " + str(smse) + ".")
-
     if tumour_indices is not None:
-        tumour = np.mean(np.square(seq[tumour_indices] - learned_seq[tumour_indices]))
+        tumour = (np.square(np.subtract(seq[tumour_indices], learned_seq[tumour_indices]))).mean()
         tumour = round(tumour * multiplier, round_fact)
         print("The mean squared error of the tumor is " + str(tumour) + ".")
 
-    end = round(time.time() - init, 3)
-    print_timestamped("Time spent computing the error for the current mapping: " + str(end) + "s.")
-    return mse, relmse, tumour, smape, smse
+    return mse, relmse, smape, tumour
