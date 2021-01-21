@@ -23,10 +23,10 @@ class DataLoader:
 
         # Set files for training/querying
         self.train_files = sorted(self.train_folder.iterdir())
-        self.query_files = sorted(self.query_folder.iterdir())
-
         self.train_files_size = len(self.train_files)
-        self.query_files_size = len(self.query_files)
+        if self.phase != 1:
+            self.query_files = sorted(self.query_folder.iterdir())
+            self.query_files_size = len(self.query_files)
 
     def set_training_filenames(self, files):
         self.train_files = files
