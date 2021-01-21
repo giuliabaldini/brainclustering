@@ -23,8 +23,7 @@ class ExcelEvaluate:
                 "scaled_MSE",
                 "scaled_relMSE",
                 "scaled_sMAPE",
-                "scaled_TumourMSE",
-
+                "scaled_TumourMSE"
             ]
             for i, n in enumerate(init_rows):
                 self.ff.write(n)
@@ -59,10 +58,7 @@ class ExcelEvaluate:
         s_smooth_mse, s_smooth_relmse, s_smooth_smape, s_smooth_tumour = evaluate_result(s_real,
                                                                                          s_predicted_smoothed,
                                                                                          tumour_indices=truth_nonzero)
-        if smoothing == "median":
-            smoothing = 0
-        elif smoothing == "average":
-            smoothing = 1
+        smoothing = 0 if smoothing == "median" else 1
         if self.excel:
             self.print_to_excel([query_name, -1,
                                  mse, relmse, smape, tumour,
@@ -124,8 +120,9 @@ def evaluate_result(seq, learned_seq, tumour_indices=None, round_fact=6, multipl
     mse = (np.square(np.subtract(ground_truth, prediction))).mean()
     # RelMSE
     relmse = mse / np.square(ground_truth).mean()
-    # SMAPE = sum |F - A| / sum |A| + |F|
-    smape = np.sum(np.abs(ground_truth - prediction)) / np.sum(prediction + ground_truth)
+    # SMAPE = 100/n sum |F - A| * 2/ sum |A| + |F|
+    smape = (100 / np.size(ground_truth)) * \
+            np.sum(np.abs(ground_truth - prediction) * 2 / (np.abs(prediction) + np.abs(ground_truth)))
 
     mse = round(mse * multiplier, round_fact)
     print("The mean squared error is " + str(mse) + ".")

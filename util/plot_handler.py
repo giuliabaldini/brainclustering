@@ -181,7 +181,8 @@ class PlotHandler:
             if self.sliced:
                 plot_image(tumour,
                            filename,
-                           mris_shape=mris_shape)
+                           mris_shape=mris_shape,
+                           plotbar=False)
             else:
                 reshaped = tumour.reshape(mris_shape)
                 cropped = crop_center(reshaped[:, :, self.chosen_slice], self.target_shape)

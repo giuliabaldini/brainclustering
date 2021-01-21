@@ -223,8 +223,7 @@ def adjust_labels_with_background_segmented(labels_with_background, segmentation
 
 
 def nonzero_union(arr1, arr2):
-    mul = arr1 * arr2
-    return np.nonzero(mul)
+    return np.nonzero(arr1 * arr2)
 
 
 def non_common_indices(indices1, indices2):
