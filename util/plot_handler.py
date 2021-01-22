@@ -29,7 +29,7 @@ class PlotHandler:
         self.chosen_slice = args.chosen_slice
         self.plot_only_results = args.plot_only_results
         self.nifti_image_extension = ".nii.gz"
-        self.target_shape = (200, 180)
+        self.target_shape = (210, 180)
         if self.sliced:
             self.image_extension = ".png"
         else:
@@ -219,7 +219,7 @@ def plot_image(image,
             error("The image cannot be reshaped and showed with imshow")
     elif len(image.shape) > 2:
         error("The image has a shape greater than 2. You might have forgotten to slice it.")
-    image = np.rot90(image, k=1)
+    image = np.rot90(image, k=-1)
     image = np.flip(image, axis=1)
     if shaded_labels is None:
         max_lin = np.max(image)
