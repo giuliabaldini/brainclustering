@@ -6,8 +6,7 @@ from options.test_options import TestOptions
 from util.data_loader import DataLoader
 from util.evaluation import ExcelEvaluate
 from util.plot_handler import PlotHandler
-from util.util import info, warning, get_timestamp, remove_background, common_nonzero, \
-    normalize_with_opt
+from util.util import info, warning, get_timestamp, remove_background, normalize_with_opt
 
 sys.path.append(os.getcwd() + "/build/cluster")  # Fix this, make it nicer
 sys.path.append(os.getcwd() + "/build/map")  # Fix this, make it nicer
@@ -32,7 +31,7 @@ if __name__ == "__main__":
     excel = ExcelEvaluate(excel_filepath, opts.excel)
 
     time_init = time.time()
-    for query_filename in data_loader.all_files:
+    for query_filename in data_loader.query_files:
         query_friendly_filename = query_filename.name
         info("Complementing image " + query_friendly_filename + ".")
         # Find the query MRIs
@@ -59,10 +58,10 @@ if __name__ == "__main__":
 
         for label in mris.keys():
             if 'truth' not in label:
-                mris[label] = normalize_with_opt(mris[label], opts.postprocess, 0.0)
+                mris[label] = normalize_with_opt(mris[label], opts.postprocess)
 
         plot_handler.plot_results(mris, query_friendly_filename, opts.smoothing, data_loader.mri_shape,
                                   data_loader.affine)
     time_end = round(time.time() - time_init, 3)
-    print("Time spent for complementing " + str(data_loader.all_files_size) + " images " + str(time_end) + "s.")
+    print("Time spent for complementing " + str(data_loader.query_files_size) + " images " + str(time_end) + "s.")
     excel.close()
