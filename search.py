@@ -36,8 +36,8 @@ if __name__ == "__main__":
     # Iterate through the query MRIs
     time_init_total = time.time()
     for query in data_loader.query_files:
-        save_model_folder = save_model_folder / query.name
-        save_model_folder.mkdir(parents=True, exist_ok=True)
+        patient_save_model_folder = save_model_folder / query.name
+        patient_save_model_folder.mkdir(parents=True, exist_ok=True)
         query_mris = data_loader.return_file(query, query_file=True)
         mse_list = []
 
@@ -58,7 +58,7 @@ if __name__ == "__main__":
 
         # Collect either the segmented image, or a clustering of the first training image
         print_timestamped("Retrieved data for labeled image.")
-        map = Mapping(data_loader, plot_handler, save_model_folder, main_clusters, sub_clusters, opts.method)
+        map = Mapping(data_loader, plot_handler, patient_save_model_folder, main_clusters, sub_clusters, opts.method)
 
         # Train
         map.cluster_mapping()
