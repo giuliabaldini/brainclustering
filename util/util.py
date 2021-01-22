@@ -260,7 +260,7 @@ def normalize_with_opt(arr, opt):
     if opt == 0:
         return (arr - arr.min()) / (arr.max() - arr.min())
     elif opt == 1:
-        return arr - np.mean(arr[arr > 0]) / np.std(arr[arr > 0])
+        return arr - np.mean(arr[arr > arr.min()]) / np.std(arr[arr > arr.min()])
     # print("[", arr.min(), arr.max(), "]")
     return arr
 
