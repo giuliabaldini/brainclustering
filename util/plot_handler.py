@@ -52,7 +52,8 @@ class PlotHandler:
         else:
             self.plot_folder = base / (args.test_set + specific_name)
 
-        self.plot_folder.mkdir(parents=True, exist_ok=True)
+        if self.phase != 1 or not self.plot_only_results:
+            self.plot_folder.mkdir(parents=True, exist_ok=True)
 
         self.train_folder = None
         self.labels_folder = None

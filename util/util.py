@@ -342,9 +342,7 @@ def precision_recall(truth, pred):
 
 def filter_blur(mapped, mris_shape, mode="median", k_size=3):
     r_mapped = mapped.reshape(mris_shape)
-    reshape_size = 1
-    for s in mris_shape:
-        reshape_size *= s
+    reshape_size = np.size(mapped)
 
     if mode == "average":
         kernel = np.ones((k_size, k_size), np.float32) / (k_size * k_size)
@@ -357,8 +355,5 @@ def filter_blur(mapped, mris_shape, mode="median", k_size=3):
         dst = cv.GaussianBlur(r_mapped, k_size=(k_size, k_size), sigmaX=0)
     else:
         error("Smoothing mode not recognized.")
-
-    # Now sharpen
-    # dst = unsharp_mask(dst)
 
     return dst.reshape(reshape_size)
