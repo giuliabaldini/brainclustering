@@ -45,7 +45,7 @@ class PlotHandler:
         if self.phase != 1:
             specific_name += "_" + str(args.postprocess)
 
-        if self.phase == 0:
+        if self.phase == 0 or (self.phase == 2 and args.model_phase == "search"):
             self.plot_folder = base / (args.test_set + "_" + self.prefix + specific_name)
         elif self.phase == 1:
             self.plot_folder = base / (self.prefix + specific_name)

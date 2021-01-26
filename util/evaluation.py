@@ -17,12 +17,8 @@ class ExcelEvaluate:
                 "query_filename",
                 "filter",
                 "MSE",
-                "relMSE",
-                "sMAPE",
                 "TumourMSE",
                 "scaled_MSE",
-                "scaled_relMSE",
-                "scaled_sMAPE",
                 "scaled_TumourMSE"
             ]
             for i, n in enumerate(init_rows):
@@ -41,68 +37,40 @@ class ExcelEvaluate:
                 self.ff.write("\n")
 
     def evaluate(self, mri_dict, query_name, truth_nonzero, smoothing):
-        mse, relmse, smape, tumour = evaluate_result(mri_dict['target'],
-                                                     mri_dict['learned_target'],
-                                                     tumour_indices=truth_nonzero)
-        smooth_mse, smooth_relmse, smooth_smape, smooth_tumour = evaluate_result(mri_dict['target'],
-                                                                                 mri_dict['learned_target_smoothed'],
-                                                                                 tumour_indices=truth_nonzero)
+        print("Measures for the predicted images.")
+        mse, tumour = evaluate_result(mri_dict['target'],
+                                      mri_dict['learned_target'],
+                                      tumour_indices=truth_nonzero)
+        print("Measures for the predicted images after smoothing.")
+        smooth_mse, smooth_tumour = evaluate_result(mri_dict['target'],
+                                                    mri_dict['learned_target_smoothed'],
+                                                    tumour_indices=truth_nonzero)
         print_timestamped("Computing MSE on the scaled data")
         # Scale data in 0,1 and compute everything again
         s_real = normalize_with_opt(mri_dict['target'], 0)
         s_predicted = normalize_with_opt(mri_dict['learned_target'], 0)
         s_predicted_smoothed = normalize_with_opt(mri_dict['learned_target_smoothed'], 0)
-        scaled_mse, scaled_relmse, scaled_smape, scaled_tumour = evaluate_result(s_real,
-                                                                                 s_predicted,
-                                                                                 tumour_indices=truth_nonzero)
-        s_smooth_mse, s_smooth_relmse, s_smooth_smape, s_smooth_tumour = evaluate_result(s_real,
-                                                                                         s_predicted_smoothed,
-                                                                                         tumour_indices=truth_nonzero)
+        print("Measures for the predicted images.")
+        scaled_mse, scaled_tumour = evaluate_result(s_real,
+                                                    s_predicted,
+                                                    tumour_indices=truth_nonzero)
+        print("Measures for the predicted images after smoothing.")
+        s_smooth_mse, s_smooth_tumour = evaluate_result(s_real,
+                                                        s_predicted_smoothed,
+                                                        tumour_indices=truth_nonzero)
         smoothing = 0 if smoothing == "median" else 1
         if self.excel:
             self.print_to_excel([query_name, -1,
-                                 mse, relmse, smape, tumour,
-                                 scaled_mse, scaled_relmse, scaled_smape, scaled_tumour,
+                                 mse, tumour, scaled_mse, scaled_tumour,
                                  ])
             self.print_to_excel([query_name, smoothing,
-                                 smooth_mse, smooth_relmse, smooth_tumour, smooth_smape,
-                                 s_smooth_mse, s_smooth_relmse, s_smooth_tumour, s_smooth_smape,
+                                 smooth_mse, smooth_tumour, s_smooth_mse, s_smooth_tumour,
                                  ])
 
     def close(self):
         if self.excel:
             self.ff.close()
             print_timestamped("Saved in " + str(self.excel_filename))
-
-
-def square_index(curr, shape, radius):
-    indices = []
-    d_index = np.unravel_index(curr, shape)
-    x = d_index[0]
-    y = d_index[1]
-    if len(shape) == 2:
-        for i in range(x - radius, x + radius + 1):
-            if i < 0 or i >= shape[0]:
-                continue
-            for j in range(y - radius, y + radius + 1):
-                if j < 0 or j >= shape[1]:
-                    continue
-                indices.append(i * shape[1] + j)
-    else:
-        # TODO: Check this to make sure it is correct
-        #   either way, this is not really feasible
-        z = d_index[2]
-        for i in range(x - radius, x + radius + 1):
-            if i < 0 or i >= shape[0]:
-                continue
-            for j in range(y - radius, y + radius + 1):
-                if j < 0 or j >= shape[1]:
-                    continue
-                for k in range(z - radius, z + radius + 1):
-                    if k < 0 or k >= shape[2]:
-                        continue
-                    indices.append(i * shape[1] + j * shape[2] + k)
-    return indices
 
 
 def evaluate_result(seq, learned_seq, tumour_indices=None, round_fact=6, multiplier=1):
@@ -118,24 +86,12 @@ def evaluate_result(seq, learned_seq, tumour_indices=None, round_fact=6, multipl
 
     # MSE: avg((A-B)^2)
     mse = (np.square(np.subtract(ground_truth, prediction))).mean()
-    # RelMSE
-    relmse = mse / np.square(ground_truth).mean()
-    # SMAPE = 100/n sum |F - A| * 2/ sum |A| + |F|
-    smape = (100 / np.size(ground_truth)) * \
-            np.sum(np.abs(ground_truth - prediction) * 2 / (np.abs(prediction) + np.abs(ground_truth)))
 
     mse = round(mse * multiplier, round_fact)
-    print("The mean squared error is " + str(mse) + ".")
-
-    relmse = round(relmse * multiplier, round_fact)
-    print("The ratio of MSE and all-zero MSE is " + str(relmse) + ".")
-
-    smape = round(smape, round_fact)
-    print("The symmetric mean absolute percentage error is " + str(smape) + ".")
-
+    print("MSE: " + str(mse), end="")
     if tumour_indices is not None:
         tumour = (np.square(np.subtract(seq[tumour_indices], learned_seq[tumour_indices]))).mean()
         tumour = round(tumour * multiplier, round_fact)
-        print("The mean squared error of the tumor is " + str(tumour) + ".")
-
-    return mse, relmse, smape, tumour
+        print(", MSE of the tumor area: " + str(tumour), end="")
+    print(".")
+    return mse, tumour
