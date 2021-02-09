@@ -277,7 +277,7 @@ namespace brainclustering {
                         // If we are at the end of the table
                     } else if (upper == vec_map_[mapped_cluster].end()) {
                         // Decrease upper
-                        lower = --upper;
+                        --upper;
                         new_data_seq2[i] = (upper->second.first * data_seq1[i]) / upper->first;
                     } else {
                         // Otherwise do interpolation
