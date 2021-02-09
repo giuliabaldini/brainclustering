@@ -62,8 +62,8 @@ def load_nifti(root, sequence):
 
 def cluster_explained():
     parser = argparse.ArgumentParser(description='Evaluation of the images in a folder.')
-    parser.add_argument('--plotfolder', type=str, help='folder for plots')
-    parser.add_argument('--patient', type=str, help='folder with the patient')
+    parser.add_argument('--plotfolder', required=True, type=str, help='folder for plots')
+    parser.add_argument('--patient', required=True, type=str, help='folder with the patient')
 
     args = parser.parse_args()
     plot_folder = Path.cwd() / args.plotfolder
@@ -72,6 +72,7 @@ def cluster_explained():
 
     n_clusters = 3
     sub_clusters = 3
+    alpha_main = 0.5
     main_colors = ["#FF0000", "#008000", "#0000FF"]  # Red, blue, green
     plot_handler.different_colors = main_colors
     cmap1 = full_colormap_fusion(n_clusters)
@@ -88,24 +89,31 @@ def cluster_explained():
         print(seq_name, centers)
         mainclusters_seq = np.zeros(seq.shape)
         mainclusters_seq[nonzero_seq] = np.array([c + 1 for c in clustered_seq], dtype=np.float_)
-
-        fig = plt.figure(figsize=(5, 5), dpi=300)
-        fig.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=0.05, hspace=0.05)
-
+        # Adjust view
         final_seq = standard_view(crop_decenter(seq.reshape(original_shape), target_shape))
         final_main = standard_view(crop_decenter(mainclusters_seq.reshape(original_shape), target_shape))
         final_main[final_main == 0] = np.nan
+
+        # Normal gray brain
         fig = plt.figure(figsize=(5, 5), dpi=300)
-        fig.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=0.05, hspace=0.05)
         plt.axis('off')
         plt.imshow(final_seq, cmap=cm.get_cmap('gray'))
         plt.savefig(plot_folder / (patient_file.name + "_" + seq_name + ".png"), bbox_inches='tight', transparent=True)
+
+        # Gray with main clusters on top
         fig = plt.figure(figsize=(5, 5), dpi=300)
-        fig.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=0.05, hspace=0.05)
         plt.axis('off')
         plt.imshow(final_seq, cmap=cm.get_cmap('gray'))
-        plt.imshow(final_main, cmap=cmap1, interpolation='nearest', alpha=0.5)
+        plt.imshow(final_main, cmap=cmap1, interpolation='nearest', alpha=1.0)
         plt.savefig(plot_folder / (patient_file.name + "_" + seq_name + "_main_clusters.png"), bbox_inches='tight',
+                    transparent=True)
+
+        # Gray with main clusters with transparency
+        fig = plt.figure(figsize=(5, 5), dpi=300)
+        plt.axis('off')
+        plt.imshow(final_seq, cmap=cm.get_cmap('gray'))
+        plt.imshow(final_main, cmap=cmap1, interpolation='nearest', alpha=alpha_main)
+        plt.savefig(plot_folder / (patient_file.name + "_" + seq_name + "_main_clusters_trans.png"), bbox_inches='tight',
                     transparent=True)
 
         subclusters_seq = np.zeros(seq.shape)
@@ -117,8 +125,8 @@ def cluster_explained():
 
         final_sub = standard_view(crop_decenter(subclusters_seq.reshape(original_shape), target_shape))
         final_sub[final_sub == 0] = np.nan
+        # Sub clusters
         fig = plt.figure(figsize=(5, 5), dpi=300)
-        fig.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=0.05, hspace=0.05)
         plt.axis('off')
         plt.imshow(final_seq, cmap=cm.get_cmap('gray'))
         plt.imshow(final_sub, cmap=cmap2, interpolation='nearest', alpha=1)
@@ -126,21 +134,32 @@ def cluster_explained():
         plt.savefig(plot_folder / (patient_file.name + "_" + seq_name + "_sub_clusters.png"), bbox_inches='tight',
                     transparent=True)
         if seq_name == "t2":
+            # For T2 we need to make the values correspond to t1
             plot_handler.different_colors = ["#FF0000", "#0000FF", "#008000"]  # Red, blue, green
             cmap1 = full_colormap_fusion(n_clusters)
             cmap1.set_bad(alpha=0.0)  # set how the colormap handles 'bad' values
             plot_handler.different_colors = ["#808080", "#000000", "#FFFFFF"]
             cmap2 = full_colormap_fusion(sub_clusters)
             cmap2.set_bad(alpha=0.0)  # set how the colormap handles 'bad' values
+
+            # Gray with main on top
             fig = plt.figure(figsize=(5, 5), dpi=300)
-            fig.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=0.05, hspace=0.05)
             plt.axis('off')
             plt.imshow(final_seq, cmap=cm.get_cmap('gray'))
-            plt.imshow(final_main, cmap=cmap1, interpolation='nearest', alpha=0.5)
+            plt.imshow(final_main, cmap=cmap1, interpolation='nearest', alpha=1.0)
             plt.savefig(plot_folder / (patient_file.name + "_" + seq_name + "_main_clusters_swapped.png"),
                         bbox_inches='tight', transparent=True)
+
+            # Gray with main on top and transparency
             fig = plt.figure(figsize=(5, 5), dpi=300)
-            fig.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=0.05, hspace=0.05)
+            plt.axis('off')
+            plt.imshow(final_seq, cmap=cm.get_cmap('gray'))
+            plt.imshow(final_main, cmap=cmap1, interpolation='nearest', alpha=alpha_main)
+            plt.savefig(plot_folder / (patient_file.name + "_" + seq_name + "_main_clusters_swapped_trans.png"),
+                        bbox_inches='tight', transparent=True)
+
+            # Sub clusters
+            fig = plt.figure(figsize=(5, 5), dpi=300)
             plt.axis('off')
             plt.imshow(final_seq, cmap=cm.get_cmap('gray'))
             plt.imshow(final_sub, cmap=cmap2, interpolation='nearest', alpha=1)
