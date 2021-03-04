@@ -1,6 +1,6 @@
 import numpy as np
 
-from util.util import error, print_timestamped, nonzero_union, normalize_with_opt
+from util.util import error, print_timestamped, union_foreground, normalize_with_opt
 
 
 class ExcelEvaluate:
@@ -80,7 +80,7 @@ def evaluate_result(seq, learned_seq, tumour_indices=None, round_fact=6, multipl
         error("The evaluation is perfomed only on 1D arrays.")
 
     tumour = None
-    nonzero_values = nonzero_union(seq, learned_seq)
+    nonzero_values = union_foreground(seq, learned_seq)
     ground_truth = seq[nonzero_values]
     prediction = learned_seq[nonzero_values]
 

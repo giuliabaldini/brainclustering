@@ -222,13 +222,12 @@ def adjust_labels_with_background_segmented(labels_with_background, segmentation
     return labels_with_background
 
 
-def nonzero_union(arr1, arr2):
-    return np.nonzero(arr1 * arr2)
+def intersection_foreground(arr1, arr2):
+    return np.logical_and(arr1 > arr1.min(), arr2 > arr2.min())
 
 
-def non_common_indices(indices1, indices2):
-    return np.nonzero(np.isin(indices1, indices2, invert=True))[0], \
-           np.nonzero(np.isin(indices2, indices1, invert=True))[0]
+def union_foreground(arr1, arr2):
+    return np.logical_or(arr1 > arr1.min(), arr2 > arr2.min())
 
 
 def remove_outliers(arr, scan_type):
