@@ -73,6 +73,7 @@ def cluster_explained():
     n_clusters = 3
     sub_clusters = 3
     alpha_main = 0.5
+    color_name = ["Red", "Blue", "Green"]
     main_colors = ["#FF0000", "#008000", "#0000FF"]  # Red, blue, green
     plot_handler.different_colors = main_colors
     cmap1 = full_colormap_fusion(n_clusters)
@@ -81,9 +82,10 @@ def cluster_explained():
     plot_handler.different_colors = ["#FFFFFF", "#000000", "#808080"]
     cmap2 = full_colormap_fusion(sub_clusters)
     cmap2.set_bad(alpha=0.0)  # set how the colormap handles 'bad' values
-
+    print(["White", "Black", "Gray"])
     for seq_name in ["t1", "t2"]:
         seq = load_nifti(patient_file, seq_name)
+        seq = (seq - seq.min()) / (seq.max() - seq.min())
         nonzero_seq = np.nonzero(seq)
         clustered_seq, centers = kmeans1d.cluster(seq[nonzero_seq], n_clusters)
         print(seq_name, centers)
@@ -120,7 +122,7 @@ def cluster_explained():
         for i in range(n_clusters):
             curr_interesting = seq[mainclusters_seq == (i + 1)]
             current_sub, centers = kmeans1d.cluster(curr_interesting, sub_clusters)
-            print(i + 1, centers)
+            print(i + 1, color_name[i], centers)
             subclusters_seq[mainclusters_seq == (i + 1)] = np.array([c + 1 for c in current_sub], dtype=np.float_)
 
         final_sub = standard_view(crop_decenter(subclusters_seq.reshape(original_shape), target_shape))
@@ -138,6 +140,15 @@ def cluster_explained():
             plot_handler.different_colors = ["#FF0000", "#0000FF", "#008000"]  # Red, blue, green
             cmap1 = full_colormap_fusion(n_clusters)
             cmap1.set_bad(alpha=0.0)  # set how the colormap handles 'bad' values
+
+            fig = plt.figure(figsize=(5, 5), dpi=300)
+            plt.axis('off')
+            plt.imshow(final_seq, cmap=cm.get_cmap('gray'))
+            plt.imshow(final_sub, cmap=cmap2, interpolation='nearest', alpha=1)
+            plt.imshow(final_main, cmap=cmap1, interpolation='nearest', alpha=0.5)
+            plt.savefig(plot_folder / (patient_file.name + "_" + seq_name + "_sub_clusters_main_swapped.png"),
+                        bbox_inches='tight', transparent=True)
+            print("Gray, Black, White")
             plot_handler.different_colors = ["#808080", "#000000", "#FFFFFF"]
             cmap2 = full_colormap_fusion(sub_clusters)
             cmap2.set_bad(alpha=0.0)  # set how the colormap handles 'bad' values
