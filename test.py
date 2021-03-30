@@ -30,28 +30,47 @@ if __name__ == "__main__":
     excel_filepath = plot_handler.plot_folder / (opts.test_set + "_" + opts.experiment_name + ".csv")
     excel = ExcelEvaluate(excel_filepath, opts.excel)
 
-    # Look for the model
-    model_search_name = "model_" + opts.method + "_main" + str(main_clusters) + "_sub" + str(sub_clusters) + "_*"
-    models_files = sorted(model_folder.glob(model_search_name), key=lambda path: int(path.stem.rsplit("_", 1)[1]))
-    if len(models_files) < 1:
-        exit("No model has been found in the " + str(model_folder) + " folder with the given parameters.")
-    if -1 < opts.model_index < len(models_files):
-        model_index = opts.model_index
-    else:
-        model_index = -1
-    model = models_files[model_index]  # Get the last one (most recent)
-    print("Testing will use model: " + str(model))
+    # Look for the model if we are looking at a training model
+    if opts.model_phase == "train":
+        model_search_name = "model_" + opts.method + "_main" + str(main_clusters) + "_sub" + str(sub_clusters) + "_*"
+        models_files = sorted(model_folder.glob(model_search_name), key=lambda path: int(path.stem.rsplit("_", 1)[1]))
+        if len(models_files) < 1:
+            exit("No model has been found in the " + str(model_folder) + " folder with the given parameters.")
+        if -1 < opts.model_index < len(models_files):
+            model_index = opts.model_index
+        else:
+            model_index = -1
+        model = models_files[model_index]  # Get the last one (most recent)
+        print("Testing will use model: " + str(model))
 
-    # Collect the segmented image
-    reference_mri = data_loader.return_model_segmented_image(model_folder, opts.method, main_clusters, sub_clusters)
-    map = Mapping(data_loader, plot_handler, model_folder, main_clusters, sub_clusters, opts.method)
-    map.restore_table(model)
+        # Collect the segmented image
+        map = Mapping(data_loader, plot_handler, model_folder, main_clusters, sub_clusters, opts.method)
+        map.restore_table(model)
 
     time_init = time.time()
-    for query_filename in data_loader.all_files:
+    for query_filename in data_loader.query_files:
         query_friendly_filename = query_filename.name
         info("Testing with image " + query_friendly_filename + ", please make sure that you used the same "
                                                                "settings as for training.")
+        # Look for the model if we are looking at a search model (one per file)
+        if opts.model_phase == "search":
+            model_search_name = "model_" + opts.method + "_main" + str(main_clusters) + "_sub" + str(
+                sub_clusters) + "_*"
+            models_files = sorted((model_folder / query_friendly_filename).glob(model_search_name),
+                                  key=lambda path: int(path.stem.rsplit("_", 1)[1]))
+            if len(models_files) < 1:
+                exit("No model has been found in the " + str(model_folder) + " folder with the given parameters.")
+            if -1 < opts.model_index < len(models_files):
+                model_index = opts.model_index
+            else:
+                model_index = -1
+            model = models_files[model_index]  # Get the last one (most recent)
+            print("Testing will use model: " + str(model))
+
+            # Collect the segmented image
+            map = Mapping(data_loader, plot_handler, model_folder, main_clusters, sub_clusters, opts.method)
+            map.restore_table(model)
+
         # Find the query MRIs
         mris = data_loader.return_file(query_filename, query_file=True)
         truth_nonzero = None
@@ -70,16 +89,16 @@ if __name__ == "__main__":
         info(
             "Computing mapping " + mapping_source + " to " + mapping_target + " for query " + query_friendly_filename + ".")
 
-        mris = map.return_results_query(mris, reference_mri, opts.smoothing)
+        mris = map.return_results_query(mris, opts.smoothing)
         if 'target' in mris:
             excel.evaluate(mris, query_friendly_filename, truth_nonzero, opts.smoothing)
 
         for label in mris.keys():
             if 'truth' not in label:
-                mris[label] = normalize_with_opt(mris[label], opts.postprocess, 0.0)
+                mris[label] = normalize_with_opt(mris[label], opts.postprocess)
 
         plot_handler.plot_results(mris, query_friendly_filename, opts.smoothing, data_loader.mri_shape,
                                   data_loader.affine)
     time_end = round(time.time() - time_init, 3)
-    print("Time spent for testing " + str(data_loader.all_files_size) + " images " + str(time_end) + "s.")
+    print("Time spent for testing " + str(data_loader.query_files_size) + " images " + str(time_end) + "s.")
     excel.close()

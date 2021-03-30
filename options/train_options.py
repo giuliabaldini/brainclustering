@@ -8,4 +8,4 @@ class TrainOptions(BaseOptions):
         self.prefix = "train"
         parser = BaseOptions.initialize(self, parser)
 
-        return self.add_common_train_search(parser)
+        return parser

@@ -1,11 +1,12 @@
-from util.util import info, crop_center, error, print_timestamped, normalize_with_opt
-import numpy as np
-from matplotlib import cm
+import copy
+
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import nibabel as nib
-import copy
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+import numpy as np
+from matplotlib import cm
+
+from util.util import info, crop_center, error, print_timestamped
 
 different_colors = ["#FF0000", "#008000", "#0000FF", "#FFD700",  # Red, green, blue, gold
                     "#00BFFF", "#DDA0DD", "#808080", "#800000",  # Light blue, magenta, gray, maroon
@@ -17,7 +18,7 @@ class PlotHandler:
 
     def __init__(self, args, options, complementary=False):
         self.output_data_folder = options.output_data_folder
-        self.phase = options.phase
+        self.phase = options.phase  # 0 search, 1 train, 2 test
         self.prefix = options.prefix
         self.mapping_source = args.mapping_source
         self.mapping_target = args.mapping_target
@@ -28,7 +29,7 @@ class PlotHandler:
         self.chosen_slice = args.chosen_slice
         self.plot_only_results = args.plot_only_results
         self.nifti_image_extension = ".nii.gz"
-        self.target_shape = (200, 180)
+        self.target_shape = (210, 180)
         if self.sliced:
             self.image_extension = ".png"
         else:
@@ -44,11 +45,15 @@ class PlotHandler:
         if self.phase != 1:
             specific_name += "_" + str(args.postprocess)
 
-        if self.phase == 1:
+        if self.phase == 0 or (self.phase == 2 and args.model_phase == "search"):
+            self.plot_folder = base / (args.test_set + "_search" + specific_name)
+        elif self.phase == 1:
             self.plot_folder = base / (self.prefix + specific_name)
         else:
             self.plot_folder = base / (args.test_set + specific_name)
-        self.plot_folder.mkdir(parents=True, exist_ok=True)
+
+        if self.phase != 1 or not self.plot_only_results:
+            self.plot_folder.mkdir(parents=True, exist_ok=True)
 
         self.train_folder = None
         self.labels_folder = None
@@ -76,8 +81,11 @@ class PlotHandler:
             for label, image in visuals.items():
                 filename = self.train_folder / (patient_name + "_" + self.plot_names_dict[label] + self.image_extension)
                 if self.sliced:
-                    plot_image(image,
+                    reshaped = image.reshape(mris_shape)
+                    cropped = crop_center(reshaped, self.target_shape)
+                    plot_image(cropped,
                                filename,
+                               colormap=cm.get_cmap('gray'),
                                mris_shape=mris_shape,
                                plotbar=False)
                 else:
@@ -101,7 +109,9 @@ class PlotHandler:
                 folder.mkdir(parents=True, exist_ok=True)
                 filename = folder / (patient_name + "_" + self.plot_names_dict[label] + self.image_extension)
                 if self.sliced:
-                    plot_image(image,
+                    reshaped = image.reshape(mris_shape)
+                    cropped = crop_center(reshaped, self.target_shape)
+                    plot_image(cropped,
                                filename,
                                colormap=cm.get_cmap('gray'),
                                mris_shape=mris_shape,
@@ -119,21 +129,27 @@ class PlotHandler:
                                affine=affine)
 
     def plot_shaded_labels(self, patient_name, labels1, labels2, method, main_clusters, mris_shape, affine):
-        folder = (self.labels_folder / patient_name)
-        folder.mkdir(parents=True, exist_ok=True)
-        m1_filename = folder / (patient_name + "_" + self.mapping_source + "_labels_" + method + self.image_extension)
-        m2_filename = folder / (patient_name + "_" + self.mapping_target + "_labels_" + method + self.image_extension)
+        m1_filename = self.labels_folder / (
+                patient_name + "_" + self.mapping_source + "_labels_" + method + self.image_extension)
+        m2_filename = self.labels_folder / (
+                patient_name + "_" + self.mapping_target + "_labels_" + method + self.image_extension)
         if self.sliced:
-            plot_image(labels1,
+            reshaped1 = labels1.reshape(mris_shape)
+            cropped1 = crop_center(reshaped1, self.target_shape)
+            plot_image(cropped1,
                        m1_filename,
                        shaded_labels=1.0,
                        colormap=colormap_fusion(main_clusters),
-                       mris_shape=mris_shape)
-            plot_image(labels2,
+                       mris_shape=mris_shape,
+                       plotbar=False)
+            reshaped2 = labels2.reshape(mris_shape)
+            cropped2 = crop_center(reshaped2, self.target_shape)
+            plot_image(cropped2,
                        m2_filename,
                        shaded_labels=1.0,
                        colormap=colormap_fusion(main_clusters),
-                       mris_shape=mris_shape)
+                       mris_shape=mris_shape,
+                       plotbar=False)
         else:
             reshaped1 = labels1.reshape(mris_shape)
             cropped1 = crop_center(reshaped1[:, :, self.chosen_slice], self.target_shape)
@@ -166,7 +182,8 @@ class PlotHandler:
             if self.sliced:
                 plot_image(tumour,
                            filename,
-                           mris_shape=mris_shape)
+                           mris_shape=mris_shape,
+                           plotbar=False)
             else:
                 reshaped = tumour.reshape(mris_shape)
                 cropped = crop_center(reshaped[:, :, self.chosen_slice], self.target_shape)
@@ -202,7 +219,7 @@ def plot_image(image,
             error("The image cannot be reshaped and showed with imshow")
     elif len(image.shape) > 2:
         error("The image has a shape greater than 2. You might have forgotten to slice it.")
-    image = np.rot90(image, k=1)
+    image = np.rot90(image, k=-1)
     image = np.flip(image, axis=1)
     if shaded_labels is None:
         max_lin = np.max(image)

@@ -1,13 +1,14 @@
 import datetime
 import time
-import numpy as np
+
 import cv2 as cv
+import numpy as np
 from munkres import Munkres
-from sklearn.metrics.cluster import contingency_matrix, adjusted_rand_score, homogeneity_completeness_v_measure, \
-    fowlkes_mallows_score
 from scipy.special import comb
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, adjusted_mutual_info_score, \
     mutual_info_score, normalized_mutual_info_score
+from sklearn.metrics.cluster import contingency_matrix, adjusted_rand_score, homogeneity_completeness_v_measure, \
+    fowlkes_mallows_score
 
 
 def _comb2(n):
@@ -221,76 +222,46 @@ def adjust_labels_with_background_segmented(labels_with_background, segmentation
     return labels_with_background
 
 
-def common_nonzero(transformed_mris):
-    common_nonzero_set = set()
-    for i in range(len(transformed_mris)):
-        common_nonzero_set = common_nonzero_set.union(set(np.nonzero(transformed_mris[i])[0]))
-
-    return np.array(list(common_nonzero_set))
+def intersection_foreground(arr1, arr2):
+    return np.logical_and(arr1 > arr1.min(), arr2 > arr2.min())
 
 
-def intersect_nonzero(transformed_mris):
-    common_nonzero_set = set(np.nonzero(transformed_mris[0])[0])
-    for t_mri in transformed_mris[1:]:
-        common_nonzero_set = common_nonzero_set.intersection(set(np.nonzero(t_mri)[0]))
-
-    return np.array(list(common_nonzero_set))
+def union_foreground(arr1, arr2):
+    return np.logical_or(arr1 > arr1.min(), arr2 > arr2.min())
 
 
-def non_common_indices(indices1, indices2):
-    return np.nonzero(np.isin(indices1, indices2, invert=True))[0], \
-           np.nonzero(np.isin(indices2, indices1, invert=True))[0]
-
-
-def mse_computation(seq, learned_seq):
-    common = common_nonzero([seq, learned_seq])
-    return np.mean(np.square(seq[common] - learned_seq[common]))
-
-
-def normalize_zero_one(arr):
-    min_val = np.min(arr)
-    max_val = np.max(arr)
-    return (arr - min_val) / (max_val - min_val)
-
-
-def standardize(arr, threshold=None):
-    if threshold is None:
-        mean = np.mean(arr)
-        std = np.std(arr)
+def remove_outliers(arr, scan_type):
+    # Standardize
+    arr = normalize_with_opt(arr, 1)
+    # Don't consider the background
+    partial = arr[arr > arr.min()]
+    # Compute the percentiles
+    q25, q75 = np.percentile(partial, 25), np.percentile(partial, 75)
+    iqr = q75 - q25
+    # Outlier cutoff
+    cut_off = iqr * 1.5
+    lower, upper = q25 - cut_off, q75 + cut_off
+    # print(lower, upper)
+    # Remove outliers above
+    # TODO: Is this correct? Definitely for t1 -> t2
+    if "t1" in scan_type:
+        arr[arr > upper] = arr.min()
     else:
-        above = arr[np.where(arr > threshold)]
-        mean = np.mean(above)
-        std = np.std(above)
-    return (arr - mean) / std
+        arr[arr < lower] = arr.min()
+    # Normalize 0, 1
+    arr = normalize_with_opt(arr, 0)
 
-
-def scale_normalize(arr, std, mean):
-    arr = normalize_zero_one(arr)
-    return (arr - mean) / std
-
-
-def normalize_with_opt(arr, opt, threshold=None):
-    if opt == 0:
-        arr = normalize_zero_one(arr)
-    elif opt == 1:
-        arr = standardize(arr, threshold)
-    elif opt == 2:
-        arr = scale_normalize(arr, 0.5, 0.5)
     return arr
 
 
-def unsharp_mask(image, kernel_size=(5, 5), sigma=1.0, amount=1.0, threshold=1.0):
-    """Return a sharpened version of the image, using an unsharp mask."""
-    blurred = cv.GaussianBlur(image, kernel_size, sigma)
-    sharpened = image * (1 + amount) + blurred * (-amount)
-    # sharpened = float(amount + 1) * image - float(amount) * blurred
-    # sharpened = np.maximum(sharpened, np.zeros(sharpened.shape))
-    # sharpened = np.minimum(sharpened, 255 * np.ones(sharpened.shape))
-    # sharpened = sharpened.round().astype(np.uint8)
-    if threshold > 0:
-        low_contrast_mask = np.abs(image - blurred) < threshold
-        np.copyto(sharpened, image, where=low_contrast_mask)
-    return sharpened
+def normalize_with_opt(arr, opt):
+    # print(opt, "[", arr.min(), arr.max(), "]", end=" - ")
+    if opt == 0:
+        return (arr - arr.min()) / (arr.max() - arr.min())
+    elif opt == 1:
+        return (arr - np.mean(arr[arr > arr.min()])) / np.std(arr[arr > arr.min()])
+    # print("[", arr.min(), arr.max(), "]")
+    return arr
 
 
 def get_stats(truth, pred):
@@ -370,9 +341,7 @@ def precision_recall(truth, pred):
 
 def filter_blur(mapped, mris_shape, mode="median", k_size=3):
     r_mapped = mapped.reshape(mris_shape)
-    reshape_size = 1
-    for s in mris_shape:
-        reshape_size *= s
+    reshape_size = np.size(mapped)
 
     if mode == "average":
         kernel = np.ones((k_size, k_size), np.float32) / (k_size * k_size)
@@ -383,13 +352,7 @@ def filter_blur(mapped, mris_shape, mode="median", k_size=3):
         dst = cv.blur(r_mapped, ksize=(k_size, k_size))
     elif mode == "gblur":
         dst = cv.GaussianBlur(r_mapped, k_size=(k_size, k_size), sigmaX=0)
-    elif mode == "nonlocalmeans":
-        dst = cv.fastNlMeansDenoising((r_mapped * 255).astype(np.uint8), h=10)
-        dst = normalize_zero_one(dst)
     else:
         error("Smoothing mode not recognized.")
-
-    # Now sharpen
-    # dst = unsharp_mask(dst)
 
     return dst.reshape(reshape_size)

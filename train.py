@@ -27,17 +27,13 @@ if __name__ == "__main__":
     sub_clusters = opts.sub_clusters
 
     info("Creating cluster mapping from " + mapping_source + " to " + mapping_target +
-         " with " + str(data_loader.all_files_size) + " training images.")
+         " with " + str(data_loader.train_files_size) + " training images.")
 
     time_init = time.time()
-    # Collect either the segmented image, or a clustering of the first training image
-    reference_mri = data_loader.return_segmented_image(data_loader.all_files[0])
-    plot_handler.plot_reference(reference_mri, save_model_folder, data_loader.mri_shape, data_loader.affine,
-                                opts.method, main_clusters, sub_clusters)
     print_timestamped("Retrieved data for labeled image.")
     map = Mapping(data_loader, plot_handler, save_model_folder, main_clusters, sub_clusters, opts.method)
 
     # Train
-    table = map.cluster_mapping(reference_mri)
+    table = map.cluster_mapping()
     time_end = round(time.time() - time_init, 3)
-    print("Time spent for training " + str(data_loader.all_files_size) + " images " + str(time_end) + "s.")
+    print("Time spent for training " + str(data_loader.train_files_size) + " images " + str(time_end) + "s.")

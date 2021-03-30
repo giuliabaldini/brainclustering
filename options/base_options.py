@@ -1,8 +1,9 @@
 import argparse
 import os
-from util.util import warning, error, info
-from util.util import error
 from pathlib import Path
+
+from util.util import error
+from util.util import warning
 
 
 # Credits: https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix
@@ -45,22 +46,10 @@ class BaseOptions():
         parser.add_argument('--mapping_target', type=str, default="t2", const="t2", nargs='?',
                             choices=['t1', 't2', 't1ce', 'flair'],
                             help='the target sequencing for the mapping')
-        parser.add_argument('--preprocess', type=int, default=0, const=0, nargs='?',
-                            choices=[-1, 0, 1],
-                            help='the kind of pre-processing to apply to the images. -1 means no pre-processing, '
-                                 '0 means scale in range [0, 1], '
-                                 '1 means normalize with unit variance and mean 0 and then scale in range [0, 1].')
 
         # Parameters for plotting/excel
         parser.add_argument('--plot_only_results', action='store_true',
                             help='if plots is true, then plot only the relevant results')
-        return parser
-
-    def add_common_train_search(self, parser):
-        # Labeled image
-        parser.add_argument('--labeled_filename', type=str, default=None,
-                            help='the file used for reference mapping, '
-                                 'if none the first image of the training set will be used')
         return parser
 
     def add_common_test_search(self, parser):
@@ -72,11 +61,10 @@ class BaseOptions():
                             help='choose to print an excel file with useful information (1) or not (0)')
 
         parser.add_argument('--postprocess', type=int, default=-1, const=-1, nargs='?',
-                            choices=[-1, 0, 1, 2],
+                            choices=[-1, 0, 1],
                             help='the kind of post-processing to apply to the images. -1 means no postprocessing, '
                                  '0 means scale in range [0, 1], '
-                                 '1 means normalize with unit variance and mean 0,'
-                                 'and 2 means scale to be in range [0, 1] and then normalize in range [-1, 1].')
+                                 '1 means normalize with unit variance and mean 0.')
 
         return parser
 
@@ -89,13 +77,6 @@ class BaseOptions():
             error("The data folder " + str(args.data_folder) + " does not exist.")
 
         self.output_data_folder.mkdir(parents=True, exist_ok=True)
-
-        if hasattr(args, 'labeled_filename'):
-            self.segmented = True
-            args.labeled_filename = Path(os.getcwd()) / str(args.labeled_filename)
-            if not (Path.cwd() / args.labeled_filename).exists():
-                warning("No segmented file has been specified, the first training image will be chosen for reference.")
-                self.segmented = False
 
         if args.method == "kmeans" and args.sub_clusters % args.main_clusters != 0:
             error("KMEANS: The smaller clusters cannot be equally divided over the main clusters. "
