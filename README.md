@@ -6,7 +6,7 @@ It is part of my master thesis at the University of Bonn, which was carried out 
 of Cologne with [Jun.-Prof. Dr. Melanie Schmidt](https://cds.uni-koeln.de/en/people/core-scientists/jun-prof-dr-melanie-schmidt)
 as supervisor and from an idea of [Dr. Liliana Lourenco Caldeira](https://www.uk-koeln.de/) from the Uniklinik of Cologne.
 
-BrainClustering first runs the clustering algorithms of choice on the MRI scans we are interest in (source and target).
+BrainClustering first runs the clustering algorithms of choice on the MRI scans we are interested in (source and target).
 Then, it computes tables that summarize the values that are present in the MRI images. 
 After repeating this process with many images, we obtain extensive tables that can be queried to compute a new image.
 
