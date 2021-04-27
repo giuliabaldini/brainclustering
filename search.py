@@ -92,5 +92,5 @@ if __name__ == "__main__":
         time_end = round(time.time() - time_init, 3)
         print("Time spent for searching the current image: " + str(time_end) + "s.")
     time_end = round(time.time() - time_init_total, 3)
-    print("Time spent for searching " + str(data_loader.train_files_size) + " images " + str(time_end) + "s.")
+    print("Time spent for searching " + str(data_loader.query_files_size) + " images " + str(time_end) + "s.")
     excel.close()
