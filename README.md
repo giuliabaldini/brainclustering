@@ -16,6 +16,8 @@ which trains the tables on a selected section of the images and also runs the te
 
 Note that this code has only been tested with the data from [BraTS 19](https://www.med.upenn.edu/cbica/brats2019/data.html) , so we do not know what might happen with other kinds of data.
 
+If you want to read about our approach there is a [Technical Report](https://kups.ub.uni-koeln.de/46376/) describing our initial approach. Things are a bit different in this version on the code, and soon I will add a link to the paper which describes the code as it is now.
+
 ## Installation
 This project is written in python3.7/8 and C++17. 
 It requires some Boost libraries to work:
@@ -54,7 +56,7 @@ The file names do not necessarily have to have these names, but they should cont
 Obviously, if you are only interested in `t1` and `t2`, the other files are not needed.
 The tumor ground truth `truth` is used to compute the MSE in the tumor area, but if it is not available it will be ignored.
 
-*At the moment only the transformations from T1 are supported*, this is because the scans need to be preprocessed to remove too bright spots that mess up the cluster recognition.
+**At the moment only the transformations from T1 are supported**, this is because the scans need to be preprocessed to remove too bright spots that mess up the cluster recognition.
 The bright spots occured in the BraTS 19 data, probabibly due to some skull strippig errors.
 We managed to find a way to normalize the T1 images, but we have not done that yet with the other sequence types.
 
