@@ -14,6 +14,8 @@ The program can be run in two modes.
 One can either train our model with `python train.py` and then `python test.py` or in search mode with `python search.py`,
 which trains the tables on a selected section of the images and also runs the testing process.
 
+Note that this code has only been tested with the data from [BraTS 19](https://www.med.upenn.edu/cbica/brats2019/data.html) , so we do not know what might happen with other types of data.
+
 ## Installation
 This project is written in python3.7/8 and C++17. 
 It requires some Boost libraries to work:
@@ -42,8 +44,7 @@ The programs can be run with their respective python command.
 
 ### Data and Folder Organization
 This software works only with 3D NIfTI files and the MRI scans should be skull-stripped, registered to the same template and have the same shape.
-Please make sure that either the MRI scans have a zero background, 
-or that the background is the minimum value of the image and you run the commands with `--preprocess` flag 0 or 1.
+Please make sure that either the background is the minimum value of the image.
 
 The `/path/to/data` folder should contain the data organized in folders according to training and testing images.
 For the training data, the folder should be called `train`, while any name can be chosen for the test/validation data.
@@ -52,6 +53,9 @@ Each patient folder should contain the files `t1, t2, t1ce, flair` and `truth`.
 The file names do not necessarily have to have these names, 
 but they should contain these strings. 
 Obviously, if you are only interested in `t1` and `t2`, the other files are not needed.
+*At the moment only the transformations from T1 are supported*, this is because the scans need to be preprocessed to remove too bright spots that mess up the clustering recognition.
+The bright spots occured in the BraTS 19 probabibly due to some skull strippig errors.
+We managed to find a way to normalize the T1 images, but we have not done that yet with the other sequence types.
 The tumor ground truth `truth` is used to compute the MSE in the tumor area, but if it is not available it will be ignored.
 
 ```
@@ -86,20 +90,12 @@ Of all variables, the only required one is `/path/to/data`, which is the path to
 
 An important choice is the number of main clusters and the number of sub clusters.
 We suggest to use 100 sub clusters and a number of main clusters between 3 and 5.
-The clustering method can be chosen among the following: `kmeans`, `nesting` and `agglomerative`.
-`agglomerative` is slow and performs worst so we do not recommend this choice.
-`kmeans` is the fastest.
+The clustering method can be either `kmeans` or `nesting`. `kmeans` is the fastest.
 
 Each of the following commands can be run on 3D images or 2D slices. The default is to run it on 3D images. To change this, add
 `--sliced` to any command or change the second argument from `3` to `2` when running the bash script. To choose a slice to run the 
 algorithms on, use the parameter `--chosen_slice` in the python script. 
 At the moment only transverse slices are supported and the default slice is the middle transverse slice for images of size 240x240x155.
-
-An important parameter is the reference image, which can be selected with `--labeled_filename`.
-This should be the path to a 3D NIfTI image containing a reliable tissue segmentation
-of a brain into white matter, grey matter and cerebrospinal fluid.
-This will be used only in case the number of main clusters is three. 
-Otherwise the first training image will be used as reference, which is the case also if `--labeled_filename` is not specified.
 
 For more information about the available options please check [base_options.py](options/base_options.py)
 
