@@ -2,7 +2,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 This software aims at reproducing MRI images given another image in a process called MRI-to-MRI translation.
-It is part of my master thesis at the University of Bonn, which was carried out in a joint project with the University 
+It is part of my master's thesis at the University of Bonn, which was carried out in a joint project with the University 
 of Cologne with [Jun.-Prof. Dr. Melanie Schmidt](https://orcid.org/0000-0003-4856-3905)
 as supervisor and from an idea of [Dr. Liliana Lourenco Caldeira](https://orcid.org/0000-0002-9530-5899) from the University Hospital of Cologne.
 
@@ -14,7 +14,7 @@ The program can be run in two modes.
 One can either train our model with `python train.py` and then `python test.py` or in search mode with `python search.py`,
 which trains the tables on a selected section of the images and also runs the testing process.
 
-Note that this code has only been tested with the data from [BraTS 19](https://www.med.upenn.edu/cbica/brats2019/data.html) , so we do not know what might happen with other types of data.
+Note that this code has only been tested with the data from [BraTS 19](https://www.med.upenn.edu/cbica/brats2019/data.html) , so we do not know what might happen with other kinds of data.
 
 ## Installation
 This project is written in python3.7/8 and C++17. 
@@ -50,13 +50,13 @@ The `/path/to/data` folder should contain the data organized in folders accordin
 For the training data, the folder should be called `train`, while any name can be chosen for the test/validation data.
 These folders should contain one folder per patient, where the name of the folder is the patient identifier.
 Each patient folder should contain the files `t1, t2, t1ce, flair` and `truth`. 
-The file names do not necessarily have to have these names, 
-but they should contain these strings. 
+The file names do not necessarily have to have these names, but they should contain these strings. 
 Obviously, if you are only interested in `t1` and `t2`, the other files are not needed.
-*At the moment only the transformations from T1 are supported*, this is because the scans need to be preprocessed to remove too bright spots that mess up the clustering recognition.
-The bright spots occured in the BraTS 19 probabibly due to some skull strippig errors.
-We managed to find a way to normalize the T1 images, but we have not done that yet with the other sequence types.
 The tumor ground truth `truth` is used to compute the MSE in the tumor area, but if it is not available it will be ignored.
+
+*At the moment only the transformations from T1 are supported*, this is because the scans need to be preprocessed to remove too bright spots that mess up the cluster recognition.
+The bright spots occured in the BraTS 19 data, probabibly due to some skull strippig errors.
+We managed to find a way to normalize the T1 images, but we have not done that yet with the other sequence types.
 
 ```
 /path/to/data
@@ -93,7 +93,7 @@ We suggest to use 100 sub clusters and a number of main clusters between 3 and 5
 The clustering method can be either `kmeans` or `nesting`. `kmeans` is the fastest.
 
 Each of the following commands can be run on 3D images or 2D slices. The default is to run it on 3D images. To change this, add
-`--sliced` to any command or change the second argument from `3` to `2` when running the bash script. To choose a slice to run the 
+`--sliced` to any command. To choose a slice to run the 
 algorithms on, use the parameter `--chosen_slice` in the python script. 
 At the moment only transverse slices are supported and the default slice is the middle transverse slice for images of size 240x240x155.
 
@@ -105,8 +105,6 @@ If we want to create a mapping from t1 to t2 we can start the training with
 python3 train.py --experiment_name test_name --data_folder /path/to/data --main_clusters 4 --sub_clusters 100 --mapping_source t1 --mapping_target t2 --method kmeans
 ```
 
-The _ indicates that a reference image has not been selected.
-
 ### Test
 
 Once the model has been trained, we can retrieve the results for the `test_name` experiment with
@@ -115,16 +113,16 @@ python3 test.py --experiment_name test_name --data_folder /path/to/data --main_c
 ```
 making sure that the same clustering algorithm and the same numbers of clusters are being used.
 
-The flag `--excel` prints the results of the MSE computation to a csv file. When using the bash script, this is the default settings.
+The flag `--excel` prints the results of the MSE computation to a csv file.
 Otherwise, the results are only printed to screen.
 
 `name/to/test` is the name of the folder where the MRI images for testing are located. For example, if the files to test are in `/path/to/data/name/to/test`, then 
 `name/to/test` should be used. The default value is `test`.
 
 The variable `--postprocess` can be used to postprocess the image:
+* **-1** (default): means no post-processing,
 * **0**: scales the image to the [0, 1] range,
 * **1**: standardizes the image to have zero mean and unit variance,
-* **2**: scales the image the [-1, 1] range.
 
 It is also possible to select a filter to apply to the resulting image with `--smoothing`. 
 Both the original and the filtered image will be saved as output.
@@ -134,12 +132,11 @@ The default filter is `median`.
 ### Search
 
 It is also possible to train on a small set of images, only the ones with the smallest MSE to the selected source image.
-In this case the patient name of the query has to be selected with `--query_filename`, which is the name of the patient 
-folder in `name/to/test`
+
 ```
-python3 search.py --experiment_name test_name --data_folder /path/to/data --main_clusters 4 --sub_clusters 100 --mapping_source t1 --mapping_target t2 --method kmeans --postprocess 0 --query_filename query_name --n_images 5 --excel --test_set name/to/test
+python3 search.py --experiment_name test_name --data_folder /path/to/data --main_clusters 4 --sub_clusters 100 --mapping_source t1 --mapping_target t2 --method kmeans --postprocess 0 --n_images 5 --excel --test_set name/to/test
 ```
-`--n_images` selects how many images with the closest MSE will be selected.
+This will iterate through all the test images in `name/to/test` and for each of them it will find the `n_images` with the smallest MSE, and will compute the training only on those images.
 
 ### Complementary
 
