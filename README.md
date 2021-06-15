@@ -3,8 +3,8 @@
 
 This software aims at reproducing MRI images given another image in a process called MRI-to-MRI translation.
 It is part of my master thesis at the University of Bonn, which was carried out in a joint project with the University 
-of Cologne with [Jun.-Prof. Dr. Melanie Schmidt](https://cds.uni-koeln.de/en/people/core-scientists/jun-prof-dr-melanie-schmidt)
-as supervisor and from an idea of [Dr. Liliana Lourenco Caldeira](https://www.uk-koeln.de/) from the Uniklinik of Cologne.
+of Cologne with [Jun.-Prof. Dr. Melanie Schmidt](https://orcid.org/0000-0003-4856-3905)
+as supervisor and from an idea of [Dr. Liliana Lourenco Caldeira](https://orcid.org/0000-0002-9530-5899) from the University Hospital of Cologne.
 
 BrainClustering first runs the clustering algorithms of choice on the MRI scans we are interested in (source and target).
 Then, it computes tables that summarize the values that are present in the MRI images. 
