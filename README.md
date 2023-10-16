@@ -2,10 +2,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 This software aims at reproducing MRI images given another image in a process called MRI-to-MRI translation.
-It is part of my master's thesis at the University of Bonn, which was carried out in a joint project with the University 
-of Cologne with [Jun.-Prof. Dr. Melanie Schmidt](https://orcid.org/0000-0003-4856-3905)
-as supervisor and from an idea of [Dr. Liliana Lourenco Caldeira](https://orcid.org/0000-0002-9530-5899) from the University Hospital of Cologne.
-
 BrainClustering first runs the clustering algorithms of choice on the MRI scans we are interested in (source and target).
 Then, it computes tables that summarize the values that are present in the MRI images. 
 After repeating this process with many images, we obtain extensive tables that can be queried to compute a new image.
@@ -15,8 +11,6 @@ One can either train our model with `python train.py` and then `python test.py` 
 which trains the tables on a selected section of the images and also runs the testing process.
 
 Note that this code has only been tested with the data from [BraTS 19](https://www.med.upenn.edu/cbica/brats2019/data.html) , so we do not know what might happen with other kinds of data.
-
-If you want to read about our approach there is a [Technical Report](https://kups.ub.uni-koeln.de/46376/) describing our initial approach. Things are a bit different in this version on the code, and soon I will add a link to the paper which describes the code as it is now.
 
 ## Installation
 This project is written in python3.7/8 and C++17. 
